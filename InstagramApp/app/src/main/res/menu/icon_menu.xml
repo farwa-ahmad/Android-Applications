@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/menu_bookmarks"
+            android:icon="@drawable/ic_baseline_bookmarks_24"
+            android:title="Bookmarks"
+            />
+
+        <item
+            android:id="@+id/menu_topics"
+            android:icon="@drawable/ic_baseline_topic_24"
+            android:title="Topics"
+            />
+
+        <item
+            android:id="@+id/menu_lists"
+            android:icon="@drawable/ic_baseline_featured_play_list_24"
+            android:title="Lists"
+            />
+    </group>
+
+    <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/menu_settings"
+                    android:title="Settings and privacy"
+                    android:icon="@drawable/ic_baseline_settings_24"
+                    />
+
+                <item
+                    android:id="@+id/menu_help"
+                    android:title="Help Centre"
+                    android:icon="@drawable/ic_baseline_help_24"
+                    />
+    </group>
+</menu>
