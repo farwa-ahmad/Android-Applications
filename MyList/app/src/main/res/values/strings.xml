@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">My List</string>
+    <string name="tasks">Tasks</string>
+    <string name="new_task_hint">Enter new task</string>
+    <string name="save">Save</string>
+    <string name="set_due_date">Set Due Date</string>
+</resources>

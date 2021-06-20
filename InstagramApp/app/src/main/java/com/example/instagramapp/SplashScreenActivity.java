@@ -18,7 +18,7 @@ ProgressBar progressBar;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash_screen);
-progressBar = findViewById(R.id.progressBar);
+        progressBar = findViewById(R.id.progressBar);
         launchManager = new LaunchManager(this);
         ConstraintLayout constraintLayout = findViewById(R.id.layoutSplashBG);
         AnimationDrawable animationDrawable = (AnimationDrawable) constraintLayout.getBackground();
