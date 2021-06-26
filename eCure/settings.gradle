@@ -1,0 +1,2 @@
+rootProject.name = "e-Cure"
+include ':app'

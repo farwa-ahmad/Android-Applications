@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".AddNewProfileActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/e_cure_blue"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="?attr/actionBarTheme"
+        app:elevation="6dp"
+        android:layout_alignParentTop="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/ivBack"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_baseline_arrow_back_24"
+                android:layout_centerVertical="true"
+                android:layout_alignParentStart="true"
+                />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add New Profile"
+                android:textColor="@color/white"
+                android:layout_centerVertical="true"
+                android:layout_centerHorizontal="true"
+                android:textSize="18sp"
+                />
+
+
+        </RelativeLayout>
+
+    </androidx.appcompat.widget.Toolbar>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:layout_below="@+id/toolbar"
+        >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="2dp"
+                android:text="Name"/>
+
+            <EditText
+                android:id="@+id/etPatientName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/input_background"
+                android:hint="Enter name"
+                android:inputType="textPersonName"
+                android:paddingLeft="10dp"
+                android:paddingTop="10dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="10dp"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:id="@+id/tvRelationship"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="2dp"
+                android:text="Relationship"/>
+
+            <Spinner
+                android:id="@+id/sRelationship"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="10dp"
+                />
+
+            <TextView
+                android:id="@+id/tvNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="2dp"
+                android:text="Phone Number"/>
+
+            <EditText
+                android:id="@+id/etPatientPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/input_background"
+                android:hint="Mobile number e.g 03001234567"
+                android:paddingLeft="10dp"
+                android:paddingTop="10dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="10dp"
+                android:ems="10"
+                android:inputType="phone"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:id="@+id/tvAge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="2dp"
+                android:text="Age"/>
+
+            <EditText
+                android:id="@+id/etPatientAge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/input_background"
+                android:hint="Enter age in years"
+                android:paddingLeft="10dp"
+                android:paddingTop="10dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="10dp"
+                android:ems="10"
+                android:inputType="number"
+                android:textSize="16sp"/>
+
+            <TextView
+                android:id="@+id/tvGender"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="2dp"
+                android:text="Gender"/>
+
+            <RadioGroup
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginStart="13dp"
+                android:layout_marginEnd="13dp"
+                android:layout_marginBottom="70dp">
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/rbMale"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:textColor="@color/e_cure_blue"
+                    android:text="Male"
+                    android:gravity="center"
+                    android:button="@android:color/transparent"
+                    android:layout_weight="1"
+                    android:checked="true"
+                    android:background="@drawable/radio_button_left_selector"/>
+                <androidx.appcompat.widget.AppCompatRadioButton
+                    android:id="@+id/rbFemale"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:textColor="@color/icontintblack"
+                    android:text="Female"
+                    android:gravity="center"
+                    android:checked="false"
+                    android:button="@android:color/transparent"
+                    android:layout_weight="1"
+                    android:background="@drawable/radio_button_right_selector"/>
+
+            </RadioGroup>
+        </LinearLayout>
+
+    </ScrollView>
+    <Button
+        android:id="@+id/btnAddProfile"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Add Profile"
+        android:textSize="16sp"
+        android:textAllCaps="false"
+        android:backgroundTint="@color/e_cure_blue"
+        android:layout_marginHorizontal="5dp"
+        android:layout_alignParentBottom="true"
+        />
+
+
+</RelativeLayout>
