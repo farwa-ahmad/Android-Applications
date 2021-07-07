@@ -1,14 +1,13 @@
 package com.example.mylist;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.mylist.databinding.ActivitySliderScreenBinding;
-import com.example.mylist.databinding.ActivitySplashScreenBinding;
 
 public class SliderScreenActivity extends AppCompatActivity {
 
@@ -36,12 +35,6 @@ public class SliderScreenActivity extends AppCompatActivity {
                 finish();
             }
         });
-
-
-
-
-
-
 
 
     }

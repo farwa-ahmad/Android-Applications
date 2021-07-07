@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#124971</color>
+    <color name="purple_500">#124971</color>
+    <color name="purple_700">#124971</color>
+    <color name="teal_200">#ea875c</color>
+    <color name="teal_700">#ea875c</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+
+    <color name="e_cure_orange">#ea875c</color>
+    <color name="e_cure_blue">#124971</color>
+    <color name="background_color">#f2f8fc</color>
+    <color name="unclicked_icon_color">#6e6e6e</color>
+
+    <color name="instafirstclor">#3c43e5</color>
+    <color name="instacenterclord">#d34267</color>
+    <color name="instalastclor">#f6ac35</color>
+
+    <color name="textcolorlight">#464646</color>
+    <color name="icontintblack">#363636</color>
+
+    <color name="purple">#ba53de</color>
+    <color name="pink">#f469a9</color>
+    <color name="blue">#88bef5</color>
+</resources>

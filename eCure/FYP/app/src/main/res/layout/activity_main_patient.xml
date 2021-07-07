@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/drawerLayout"
+    tools:openDrawer="start"
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivityPatient">
+
+    <RelativeLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:gravity="center"
+        >
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavView"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="0dp"
+            android:background="?android:attr/windowBackground"
+            app:menu="@menu/bottom_nav_menu"
+            android:layout_alignParentBottom="true"
+            app:itemTextColor="@color/e_cure_blue"
+            android:backgroundTint="@color/white"
+            app:labelVisibilityMode="selected"/>
+
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/bottomNavView"
+            android:layout_below="@id/toolbar"/>
+
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:background="@color/white"
+            android:minHeight="?attr/actionBarSize"
+            android:theme="?attr/actionBarTheme"
+            app:elevation="6dp">
+
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!--<ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/ivProfile"
+                    android:onClick="CallPatientProfile"
+                    android:src="@drawable/profile_icon"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginEnd="15dp"
+                    android:layout_centerVertical="true"
+                    app:tint="@color/black" />-->
+
+
+                <TextView
+                    android:id="@+id/tvECure"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="sans-serif-smallcaps"
+                    android:text="@string/e_cure"
+                    android:textColor="@color/e_cure_blue"
+                    android:textSize="30sp"
+                    android:textStyle="bold"
+                    android:paddingRight="70dp"/>
+
+                <!--<ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/ivLogout"
+                    android:src="@drawable/ic_baseline_login_24"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginEnd="15dp"
+                    android:layout_centerVertical="true"
+                    app:tint="@color/icontintblack" />-->
+
+                <ImageView
+                    android:id="@+id/ivLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@id/tvLocation"
+                    app:srcCompat="@drawable/ic_baseline_location_on_24"
+                    app:tint="@color/e_cure_orange" />
+
+                <TextView
+                    android:id="@+id/tvLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@id/ivLocationMenu"
+                    android:fontFamily="sans-serif"
+                    android:text="Location"
+                    android:textColor="@color/textcolorlight" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_baseline_keyboard_arrow_down_24"
+                    android:id="@+id/ivLocationMenu"
+                    android:layout_marginEnd="5dp"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"
+                    app:tint="@color/icontintblack"/>
+
+            </RelativeLayout>
+
+        </androidx.appcompat.widget.Toolbar>
+
+    </RelativeLayout>
+
+
+    <com.google.android.material.navigation.NavigationView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:id="@+id/drawerNav"
+        app:menu="@menu/drawer_nav_menu"
+        app:headerLayout="@layout/drawer_nav_header"
+        android:layout_gravity="start"
+        />
+
+</androidx.drawerlayout.widget.DrawerLayout>
