@@ -125,6 +125,14 @@ public class MainActivityPatient extends AppCompatActivity implements Navigation
             }
         });
 
+        binding.tvLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivityPatient.this,SearchLocationActivity.class));
+                finish();
+            }
+        });
+
         //For setting location
         DatabaseReference dbRef;
         dbRef = FirebaseDatabase.getInstance().getReference("Patient").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
