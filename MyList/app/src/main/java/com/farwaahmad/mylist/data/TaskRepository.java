@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ public class TaskRepository {
 
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
+    private static final int DELETE_BATCH_SIZE = 400;
 
     private final FirebaseFirestore firestore;
     private final String userId;
@@ -74,8 +76,7 @@ public class TaskRepository {
         task.put("status", 0);
         task.put("time", FieldValue.serverTimestamp());
 
-        tasks()
-                .add(task)
+        tasks().add(task)
                 .addOnSuccessListener(documentReference -> callback.onSuccess())
                 .addOnFailureListener(callback::onError);
     }
@@ -84,8 +85,7 @@ public class TaskRepository {
                            @NonNull String taskText,
                            @NonNull String dueDate,
                            @NonNull OperationCallback callback) {
-        tasks()
-                .document(id)
+        tasks().document(id)
                 .update("task", taskText, "due", dueDate)
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(callback::onError);
@@ -94,8 +94,7 @@ public class TaskRepository {
     public void updateStatus(@NonNull String id,
                              boolean isComplete,
                              @NonNull OperationCallback callback) {
-        tasks()
-                .document(id)
+        tasks().document(id)
                 .update("status", isComplete ? 1 : 0)
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(callback::onError);
@@ -103,22 +102,44 @@ public class TaskRepository {
 
     public void deleteTask(@NonNull String id,
                            @NonNull OperationCallback callback) {
-        tasks()
-                .document(id)
+        tasks().document(id)
                 .delete()
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(callback::onError);
     }
 
+    public void deleteAllTasks(@NonNull OperationCallback callback) {
+        deleteNextBatch(callback);
+    }
+
+    private void deleteNextBatch(@NonNull OperationCallback callback) {
+        tasks().limit(DELETE_BATCH_SIZE)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.isEmpty()) {
+                        callback.onSuccess();
+                        return;
+                    }
+
+                    WriteBatch batch = firestore.batch();
+                    for (DocumentSnapshot document : snapshot.getDocuments()) {
+                        batch.delete(document.getReference());
+                    }
+
+                    batch.commit()
+                            .addOnSuccessListener(unused -> deleteNextBatch(callback))
+                            .addOnFailureListener(callback::onError);
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
     public interface TaskListener {
         void onTasksChanged(@NonNull List<TaskModel> tasks);
-
         void onError(@NonNull Exception exception);
     }
 
     public interface OperationCallback {
         void onSuccess();
-
         void onError(@NonNull Exception exception);
     }
 }
