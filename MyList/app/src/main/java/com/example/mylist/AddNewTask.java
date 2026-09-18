@@ -2,7 +2,6 @@ package com.example.mylist;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -14,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.example.mylist.databinding.AddTaskLayoutBinding;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
@@ -93,15 +93,11 @@ public class AddNewTask extends BottomSheetDialogFragment {
         });
 
         binding.tvSetDueDate.setOnClickListener(v -> showDatePicker());
-
         binding.btnSave.setOnClickListener(v -> saveTask());
     }
 
     private void showDatePicker() {
         Calendar calendar = Calendar.getInstance();
-        int month = calendar.get(Calendar.MONTH);
-        int year = calendar.get(Calendar.YEAR);
-        int day = calendar.get(Calendar.DATE);
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
@@ -116,9 +112,9 @@ public class AddNewTask extends BottomSheetDialogFragment {
                         binding.tvSetDueDate.setText(dueDate);
                     }
                 },
-                year,
-                month,
-                day
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DATE)
         );
         datePickerDialog.show();
     }
@@ -126,7 +122,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
     private void saveTask() {
         String taskText = binding.etTaskText.getText().toString().trim();
         if (taskText.isEmpty()) {
-            Toast.makeText(requireContext(), "No task entered", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), R.string.no_task_entered, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -145,7 +141,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                         }
                         Toast.makeText(
                                 requireContext(),
-                                isUpdate ? "Task updated" : "Task saved",
+                                isUpdate ? R.string.task_updated : R.string.task_saved,
                                 Toast.LENGTH_SHORT
                         ).show();
                         dismiss();
@@ -159,7 +155,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                         binding.btnSave.setEnabled(true);
                         String message = exception.getMessage() != null
                                 ? exception.getMessage()
-                                : "Something went wrong";
+                                : getString(R.string.generic_error);
                         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -170,9 +166,11 @@ public class AddNewTask extends BottomSheetDialogFragment {
         boolean hasText = text != null && !text.toString().trim().isEmpty();
         binding.btnSave.setEnabled(hasText);
         binding.btnSave.setTextColor(
-                getResources().getColor(hasText ? R.color.primary : R.color.dark_gray)
+                ContextCompat.getColor(
+                        requireContext(),
+                        hasText ? R.color.primary : R.color.dark_gray
+                )
         );
-        binding.btnSave.setBackgroundColor(Color.TRANSPARENT);
     }
 
     @Override

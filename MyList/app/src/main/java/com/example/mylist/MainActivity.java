@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onError(@NonNull Exception exception) {
-                Toast.makeText(MainActivity.this, "Could not load tasks", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.load_tasks_error, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onError(@NonNull Exception exception) {
                 taskAdapter.restoreItem(adapterPosition);
-                Toast.makeText(MainActivity.this, "Could not delete task", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.delete_task_error, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onError(@NonNull Exception exception) {
                 taskAdapter.notifyDataSetChanged();
-                Toast.makeText(MainActivity.this, "Could not update task", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.update_task_error, Toast.LENGTH_SHORT).show();
             }
         });
     }

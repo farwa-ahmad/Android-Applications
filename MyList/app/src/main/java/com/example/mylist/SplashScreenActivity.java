@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -11,8 +12,19 @@ import com.example.mylist.databinding.ActivitySplashScreenBinding;
 
 public class SplashScreenActivity extends AppCompatActivity {
 
-    ActivitySplashScreenBinding binding;
-    LaunchManager launchManager;
+    private ActivitySplashScreenBinding binding;
+    private LaunchManager launchManager;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private final Runnable navigateToNextScreen = () -> {
+        if (launchManager.isFirstTime()) {
+            launchManager.setFirstLaunch(false);
+            startActivity(new Intent(this, SliderScreenActivity.class));
+        } else {
+            startActivity(new Intent(this, MainActivity.class));
+        }
+        finish();
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,31 +32,21 @@ public class SplashScreenActivity extends AppCompatActivity {
 
         launchManager = new LaunchManager(this);
 
-        //view binding
         binding = ActivitySplashScreenBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        //animated background
-        AnimationDrawable animationDrawable = (AnimationDrawable) binding.rlSplashScreen.getBackground();
+        AnimationDrawable animationDrawable =
+                (AnimationDrawable) binding.rlSplashScreen.getBackground();
         animationDrawable.setEnterFadeDuration(2000);
         animationDrawable.setExitFadeDuration(4000);
         animationDrawable.start();
 
-        //setting time and intents
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if(launchManager.isFirstTime()) {
-                    launchManager.setFirstLaunch(false);
-                    startActivity(new Intent(getApplicationContext(), SliderScreenActivity.class));
-                }
-                else {
-                    startActivity(new Intent(getApplicationContext(),MainActivity.class));
-                }
-                finish();
-            }
-        },1500);
-
+        handler.postDelayed(navigateToNextScreen, 1500);
     }
 
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacks(navigateToNextScreen);
+        super.onDestroy();
+    }
 }

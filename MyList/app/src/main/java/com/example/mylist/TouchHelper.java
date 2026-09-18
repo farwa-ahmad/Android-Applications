@@ -33,10 +33,14 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
 
         if (direction == ItemTouchHelper.RIGHT) {
             new AlertDialog.Builder(taskAdapter.getContext())
-                    .setTitle("Delete Task")
-                    .setMessage("Are you sure you want to delete this task?")
-                    .setPositiveButton("Yes", (dialog, which) -> taskAdapter.requestDelete(position))
-                    .setNegativeButton("No", (dialog, which) -> taskAdapter.restoreItem(position))
+                    .setTitle(R.string.delete_task_title)
+                    .setMessage(R.string.delete_task_message)
+                    .setPositiveButton(R.string.yes, (dialog, which) ->
+                            taskAdapter.requestDelete(position)
+                    )
+                    .setNegativeButton(R.string.no, (dialog, which) ->
+                            taskAdapter.restoreItem(position)
+                    )
                     .setOnCancelListener(dialog -> taskAdapter.restoreItem(position))
                     .show();
         } else {

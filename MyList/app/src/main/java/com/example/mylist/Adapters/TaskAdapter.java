@@ -8,6 +8,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mylist.Models.TaskModel;
@@ -68,7 +69,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
         TaskModel taskModel = taskList.get(position);
 
         holder.taskCheckBox.setText(taskModel.getTask());
-        holder.dueDateText.setText("Due On " + taskModel.getDue());
+
+        String dueDate = taskModel.getDue();
+        holder.dueDateText.setText(
+                dueDate == null || dueDate.isEmpty()
+                        ? context.getString(R.string.set_due_date)
+                        : context.getString(R.string.due_on_format, dueDate)
+        );
 
         holder.taskCheckBox.setOnCheckedChangeListener(null);
         holder.taskCheckBox.setChecked(taskModel.getStatus() != 0);

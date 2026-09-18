@@ -3,5 +3,25 @@
     <string name="tasks">Tasks</string>
     <string name="new_task_hint">Enter new task</string>
     <string name="save">Save</string>
-    <string name="set_due_date">Set Due Date</string>
+    <string name="set_due_date">Set due date</string>
+    <string name="add_task">Add task</string>
+    <string name="due_on_format">Due on %1$s</string>
+
+    <string name="onboarding_thanks">Thanks for downloading</string>
+    <string name="onboarding_details">Manage and keep track of your tasks with ease.</string>
+    <string name="next">Next</string>
+    <string name="app_logo_description">My List logo</string>
+
+    <string name="delete_task_title">Delete task</string>
+    <string name="delete_task_message">Are you sure you want to delete this task?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+
+    <string name="no_task_entered">Enter a task before saving.</string>
+    <string name="task_updated">Task updated</string>
+    <string name="task_saved">Task saved</string>
+    <string name="generic_error">Something went wrong</string>
+    <string name="load_tasks_error">Could not load tasks</string>
+    <string name="delete_task_error">Could not delete task</string>
+    <string name="update_task_error">Could not update task</string>
 </resources>
