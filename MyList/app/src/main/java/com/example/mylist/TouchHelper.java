@@ -26,21 +26,21 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
 
     @Override
     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-        final int position = viewHolder.getBindingAdapterPosition();
+        final int position = viewHolder.getAdapterPosition();
         if (position == RecyclerView.NO_POSITION) {
             return;
         }
 
         if (direction == ItemTouchHelper.RIGHT) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(taskAdapter.getContext());
-            builder.setMessage("Are you sure you want to delete this task?")
+            new AlertDialog.Builder(taskAdapter.getContext())
                     .setTitle("Delete Task")
-                    .setPositiveButton("Yes", (dialog, which) -> taskAdapter.deleteTask(position))
-                    .setNegativeButton("No", (dialog, which) -> taskAdapter.notifyItemChanged(position));
-
-            builder.create().show();
+                    .setMessage("Are you sure you want to delete this task?")
+                    .setPositiveButton("Yes", (dialog, which) -> taskAdapter.requestDelete(position))
+                    .setNegativeButton("No", (dialog, which) -> taskAdapter.restoreItem(position))
+                    .setOnCancelListener(dialog -> taskAdapter.restoreItem(position))
+                    .show();
         } else {
-            taskAdapter.editTask(position);
+            taskAdapter.requestEdit(position);
         }
     }
 }

@@ -1,9 +1,7 @@
 package com.example.mylist;
 
-import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
@@ -18,38 +16,45 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.mylist.databinding.AddTaskLayoutBinding;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
 
-// class for the bottom dialog option to enter tasks
 public class AddNewTask extends BottomSheetDialogFragment {
 
     public static final String TAG = "AddNewTask";
 
-    AddTaskLayoutBinding binding;
+    private static final String ARG_ID = "id";
+    private static final String ARG_TASK = "task";
+    private static final String ARG_DUE = "due";
 
+    private AddTaskLayoutBinding binding;
     private String dueDate = "";
     private String id = "";
-
-    private Context context;
-
-    private FirebaseFirestore firestore;
+    private boolean isUpdate;
+    private TaskSaveListener taskSaveListener;
 
     public static AddNewTask newInstance() {
         return new AddNewTask();
     }
 
+    public static AddNewTask newInstance(@NonNull String id,
+                                         @NonNull String task,
+                                         @NonNull String dueDate) {
+        AddNewTask fragment = new AddNewTask();
+        Bundle arguments = new Bundle();
+        arguments.putString(ARG_ID, id);
+        arguments.putString(ARG_TASK, task);
+        arguments.putString(ARG_DUE, dueDate);
+        fragment.setArguments(arguments);
+        return fragment;
+    }
+
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         binding = AddTaskLayoutBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -58,18 +63,16 @@ public class AddNewTask extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        firestore = FirebaseFirestore.getInstance();
-
-        boolean isUpdate = false;
-        final Bundle bundle = getArguments();
-        if (bundle != null) {
+        Bundle arguments = getArguments();
+        if (arguments != null) {
             isUpdate = true;
-            String task = bundle.getString("task", "");
-            id = bundle.getString("id", "");
-            dueDate = bundle.getString("due", "");
+            id = arguments.getString(ARG_ID, "");
+            dueDate = arguments.getString(ARG_DUE, "");
 
-            binding.etTaskText.setText(task);
-            binding.tvSetDueDate.setText(dueDate.isEmpty() ? getString(R.string.set_due_date) : dueDate);
+            binding.etTaskText.setText(arguments.getString(ARG_TASK, ""));
+            binding.tvSetDueDate.setText(
+                    dueDate.isEmpty() ? getString(R.string.set_due_date) : dueDate
+            );
         }
 
         updateSaveButtonState(binding.etTaskText.getText());
@@ -89,98 +92,121 @@ public class AddNewTask extends BottomSheetDialogFragment {
             }
         });
 
-        binding.tvSetDueDate.setOnClickListener(v -> {
-            Calendar calendar = Calendar.getInstance();
-            int month = calendar.get(Calendar.MONTH);
-            int year = calendar.get(Calendar.YEAR);
-            int day = calendar.get(Calendar.DATE);
+        binding.tvSetDueDate.setOnClickListener(v -> showDatePicker());
 
-            DatePickerDialog datePickerDialog = new DatePickerDialog(context, new DatePickerDialog.OnDateSetListener() {
-                @Override
-                public void onDateSet(DatePicker view, int selectedYear, int selectedMonth, int dayOfMonth) {
-                    int displayMonth = selectedMonth + 1;
-                    dueDate = dayOfMonth + "/" + displayMonth + "/" + selectedYear;
-                    binding.tvSetDueDate.setText(dueDate);
+        binding.btnSave.setOnClickListener(v -> saveTask());
+    }
+
+    private void showDatePicker() {
+        Calendar calendar = Calendar.getInstance();
+        int month = calendar.get(Calendar.MONTH);
+        int year = calendar.get(Calendar.YEAR);
+        int day = calendar.get(Calendar.DATE);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                requireContext(),
+                new DatePickerDialog.OnDateSetListener() {
+                    @Override
+                    public void onDateSet(DatePicker view,
+                                          int selectedYear,
+                                          int selectedMonth,
+                                          int dayOfMonth) {
+                        int displayMonth = selectedMonth + 1;
+                        dueDate = dayOfMonth + "/" + displayMonth + "/" + selectedYear;
+                        binding.tvSetDueDate.setText(dueDate);
+                    }
+                },
+                year,
+                month,
+                day
+        );
+        datePickerDialog.show();
+    }
+
+    private void saveTask() {
+        String taskText = binding.etTaskText.getText().toString().trim();
+        if (taskText.isEmpty()) {
+            Toast.makeText(requireContext(), "No task entered", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.btnSave.setEnabled(false);
+
+        taskSaveListener.onTaskSaveRequested(
+                id,
+                taskText,
+                dueDate,
+                isUpdate,
+                new SaveCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (!isAdded()) {
+                            return;
+                        }
+                        Toast.makeText(
+                                requireContext(),
+                                isUpdate ? "Task updated" : "Task saved",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                        dismiss();
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception exception) {
+                        if (!isAdded()) {
+                            return;
+                        }
+                        binding.btnSave.setEnabled(true);
+                        String message = exception.getMessage() != null
+                                ? exception.getMessage()
+                                : "Something went wrong";
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    }
                 }
-            }, year, month, day);
-            datePickerDialog.show();
-        });
-
-        boolean finalIsUpdate = isUpdate;
-        binding.btnSave.setOnClickListener(v -> {
-            String taskText = binding.etTaskText.getText().toString().trim();
-
-            if (taskText.isEmpty()) {
-                Toast.makeText(context, "No task entered", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            binding.btnSave.setEnabled(false);
-
-            if (finalIsUpdate) {
-                firestore.collection("task")
-                        .document(id)
-                        .update("task", taskText, "due", dueDate)
-                        .addOnCompleteListener(task -> {
-                            if (task.isSuccessful()) {
-                                Toast.makeText(context, "Task updated", Toast.LENGTH_SHORT).show();
-                                dismiss();
-                            } else {
-                                binding.btnSave.setEnabled(true);
-                                showError(task.getException());
-                            }
-                        });
-            } else {
-                Map<String, Object> taskMap = new HashMap<>();
-                taskMap.put("task", taskText);
-                taskMap.put("due", dueDate);
-                taskMap.put("status", 0);
-                taskMap.put("time", FieldValue.serverTimestamp());
-
-                firestore.collection("task")
-                        .add(taskMap)
-                        .addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
-                            @Override
-                            public void onComplete(@NonNull Task<DocumentReference> task) {
-                                if (task.isSuccessful()) {
-                                    Toast.makeText(context, "Task saved", Toast.LENGTH_SHORT).show();
-                                    dismiss();
-                                } else {
-                                    binding.btnSave.setEnabled(true);
-                                    showError(task.getException());
-                                }
-                            }
-                        });
-            }
-        });
+        );
     }
 
     private void updateSaveButtonState(CharSequence text) {
         boolean hasText = text != null && !text.toString().trim().isEmpty();
         binding.btnSave.setEnabled(hasText);
-        binding.btnSave.setTextColor(getResources().getColor(hasText ? R.color.primary : R.color.dark_gray));
+        binding.btnSave.setTextColor(
+                getResources().getColor(hasText ? R.color.primary : R.color.dark_gray)
+        );
         binding.btnSave.setBackgroundColor(Color.TRANSPARENT);
-    }
-
-    private void showError(Exception exception) {
-        String message = exception != null && exception.getMessage() != null
-                ? exception.getMessage()
-                : "Something went wrong";
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        this.context = context;
+        if (!(context instanceof TaskSaveListener)) {
+            throw new IllegalStateException("Host activity must implement TaskSaveListener");
+        }
+        taskSaveListener = (TaskSaveListener) context;
     }
 
     @Override
-    public void onDismiss(@NonNull DialogInterface dialog) {
-        super.onDismiss(dialog);
-        Activity activity = getActivity();
-        if (activity instanceof OnDialogCloseListener) {
-            ((OnDialogCloseListener) activity).onDialogClose(dialog);
-        }
+    public void onDetach() {
+        taskSaveListener = null;
+        super.onDetach();
+    }
+
+    @Override
+    public void onDestroyView() {
+        binding = null;
+        super.onDestroyView();
+    }
+
+    public interface TaskSaveListener {
+        void onTaskSaveRequested(@NonNull String id,
+                                 @NonNull String taskText,
+                                 @NonNull String dueDate,
+                                 boolean isUpdate,
+                                 @NonNull SaveCallback callback);
+    }
+
+    public interface SaveCallback {
+        void onSuccess();
+
+        void onError(@NonNull Exception exception);
     }
 }
