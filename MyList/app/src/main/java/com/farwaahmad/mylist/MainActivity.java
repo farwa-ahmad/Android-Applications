@@ -286,18 +286,28 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        taskRepository.deleteAllTasks(new TaskRepository.OperationCallback() {
+        authRepository.reauthenticateForDeletion(password, new AuthRepository.SimpleCallback() {
             @Override
             public void onSuccess() {
-                authRepository.deleteCurrentAccount(password, new AuthRepository.SimpleCallback() {
+                taskRepository.deleteAllTasks(new TaskRepository.OperationCallback() {
                     @Override
                     public void onSuccess() {
-                        stopListeningForTasks();
-                        tasks.clear();
-                        taskAdapter.notifyDataSetChanged();
-                        taskRepository = null;
-                        callback.onSuccess();
-                        ensureSignedIn();
+                        authRepository.deleteCurrentAccount(new AuthRepository.SimpleCallback() {
+                            @Override
+                            public void onSuccess() {
+                                stopListeningForTasks();
+                                tasks.clear();
+                                taskAdapter.notifyDataSetChanged();
+                                taskRepository = null;
+                                callback.onSuccess();
+                                ensureSignedIn();
+                            }
+
+                            @Override
+                            public void onError(@NonNull Exception exception) {
+                                callback.onError(exception);
+                            }
+                        });
                     }
 
                     @Override

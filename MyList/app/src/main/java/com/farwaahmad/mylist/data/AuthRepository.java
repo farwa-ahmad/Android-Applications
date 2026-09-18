@@ -97,8 +97,8 @@ public class AuthRepository {
         auth.signOut();
     }
 
-    public void deleteCurrentAccount(@Nullable String password,
-                                     @NonNull SimpleCallback callback) {
+    public void reauthenticateForDeletion(@Nullable String password,
+                                          @NonNull SimpleCallback callback) {
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser == null) {
             callback.onError(new IllegalStateException("No signed-in account."));
@@ -106,9 +106,7 @@ public class AuthRepository {
         }
 
         if (currentUser.isAnonymous()) {
-            currentUser.delete()
-                    .addOnSuccessListener(unused -> callback.onSuccess())
-                    .addOnFailureListener(callback::onError);
+            callback.onSuccess();
             return;
         }
 
@@ -120,11 +118,19 @@ public class AuthRepository {
 
         AuthCredential credential = EmailAuthProvider.getCredential(email, password);
         currentUser.reauthenticate(credential)
-                .addOnSuccessListener(result ->
-                        currentUser.delete()
-                                .addOnSuccessListener(unused -> callback.onSuccess())
-                                .addOnFailureListener(callback::onError)
-                )
+                .addOnSuccessListener(result -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void deleteCurrentAccount(@NonNull SimpleCallback callback) {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
+            callback.onError(new IllegalStateException("No signed-in account."));
+            return;
+        }
+
+        currentUser.delete()
+                .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(callback::onError);
     }
 
