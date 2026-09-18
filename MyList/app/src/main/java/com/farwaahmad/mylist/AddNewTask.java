@@ -2,10 +2,13 @@ package com.farwaahmad.mylist;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
@@ -15,6 +18,7 @@ import androidx.annotation.Nullable;
 
 import com.farwaahmad.mylist.databinding.AddTaskLayoutBinding;
 import com.farwaahmad.mylist.util.TaskDateUtils;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.util.Calendar;
@@ -72,8 +76,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
             binding.tvSheetTitle.setText(R.string.edit_task);
             binding.etTaskText.setText(arguments.getString(ARG_TASK, ""));
+            binding.btnSave.setText(R.string.save_task);
         } else {
             binding.tvSheetTitle.setText(R.string.new_task);
+            binding.btnSave.setText(R.string.add_task);
         }
 
         updateDueDateUi();
@@ -112,6 +118,29 @@ public class AddNewTask extends BottomSheetDialogFragment {
         }
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        if (getDialog() == null) {
+            return;
+        }
+
+        View bottomSheet =
+                getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) {
+            bottomSheet.setBackgroundColor(Color.TRANSPARENT);
+            BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            behavior.setSkipCollapsed(true);
+        }
+
+        Window window = getDialog().getWindow();
+        if (window != null) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
     private void showDatePicker() {
         Calendar calendar = TaskDateUtils.calendarForDue(dueDate);
         if (calendar == null) {
@@ -146,10 +175,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
         }
 
         binding.btnDueDate.setText(
-                getString(
-                        R.string.due_picker_format,
-                        TaskDateUtils.formatForDisplay(requireContext(), dueDate)
-                )
+                TaskDateUtils.formatForDisplay(requireContext(), dueDate)
         );
     }
 
@@ -212,7 +238,11 @@ public class AddNewTask extends BottomSheetDialogFragment {
         binding.btnDueDate.setEnabled(!saving);
         binding.btnClearDueDate.setEnabled(!saving);
         binding.etTaskText.setEnabled(!saving);
-        binding.btnSave.setText(saving ? R.string.saving : R.string.save_task);
+        binding.btnSave.setText(
+                saving
+                        ? R.string.saving
+                        : (isUpdate ? R.string.save_task : R.string.add_task)
+        );
     }
 
     private void updateSaveButtonState() {
