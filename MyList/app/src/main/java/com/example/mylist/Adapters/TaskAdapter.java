@@ -6,92 +6,107 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.mylist.AddNewTask;
 import com.example.mylist.MainActivity;
 import com.example.mylist.Models.TaskModel;
 import com.example.mylist.R;
-import com.example.mylist.databinding.AddTaskLayoutBinding;
-import com.example.mylist.databinding.TaskLayoutBinding;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> {
 
-    private List<TaskModel> taskList;
-    private MainActivity activity;
-    private FirebaseFirestore firestore;
+    private final List<TaskModel> taskList;
+    private final MainActivity activity;
+    private final FirebaseFirestore firestore;
 
-    public TaskAdapter(MainActivity mainActivity , List<TaskModel> taskList){
+    public TaskAdapter(MainActivity mainActivity, List<TaskModel> taskList) {
         this.taskList = taskList;
-        activity = mainActivity;
+        this.activity = mainActivity;
+        this.firestore = FirebaseFirestore.getInstance();
     }
 
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(activity).inflate(R.layout.task_layout , parent , false);
-        firestore = FirebaseFirestore.getInstance();
-
+        View view = LayoutInflater.from(activity).inflate(R.layout.task_layout, parent, false);
         return new MyViewHolder(view);
-
     }
 
-    public void deleteTask(int position){
+    public void deleteTask(int position) {
+        if (position == RecyclerView.NO_POSITION || position >= taskList.size()) {
+            return;
+        }
+
         TaskModel taskModel = taskList.get(position);
-        firestore.collection("task").document(taskModel.TaskId).delete();
-        taskList.remove(position);
-        notifyItemRemoved(position);
+        firestore.collection("task")
+                .document(taskModel.TaskId)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    int currentPosition = taskList.indexOf(taskModel);
+                    if (currentPosition != -1) {
+                        taskList.remove(currentPosition);
+                        notifyItemRemoved(currentPosition);
+                    }
+                })
+                .addOnFailureListener(exception -> {
+                    notifyItemChanged(position);
+                    Toast.makeText(activity, "Could not delete task", Toast.LENGTH_SHORT).show();
+                });
     }
 
-    public Context getContext(){
+    public Context getContext() {
         return activity;
     }
 
-    public void editTask(int position){
+    public void editTask(int position) {
+        if (position == RecyclerView.NO_POSITION || position >= taskList.size()) {
+            return;
+        }
+
         TaskModel taskModel = taskList.get(position);
 
         Bundle bundle = new Bundle();
-        bundle.putString("task" , taskModel.getTask());
-        bundle.putString("due" , taskModel.getDue());
-        bundle.putString("id" , taskModel.TaskId);
+        bundle.putString("task", taskModel.getTask());
+        bundle.putString("due", taskModel.getDue());
+        bundle.putString("id", taskModel.TaskId);
 
         AddNewTask addNewTask = new AddNewTask();
         addNewTask.setArguments(bundle);
-        addNewTask.show(activity.getSupportFragmentManager() , addNewTask.getTag());
+        addNewTask.show(activity.getSupportFragmentManager(), AddNewTask.TAG);
+        notifyItemChanged(position);
     }
+
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-
         TaskModel taskModel = taskList.get(position);
         holder.mCheckBox.setText(taskModel.getTask());
-
         holder.tvDueDate.setText("Due On " + taskModel.getDue());
 
+        holder.mCheckBox.setOnCheckedChangeListener(null);
         holder.mCheckBox.setChecked(toBoolean(taskModel.getStatus()));
 
-        holder.mCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked){
-                    firestore.collection("task").document(taskModel.TaskId).update("status" , 1);
-                }else{
-                    firestore.collection("task").document(taskModel.TaskId).update("status" , 0);
-                }
-            }
-        });
-
+        holder.mCheckBox.setOnCheckedChangeListener((buttonView, isChecked) ->
+                firestore.collection("task")
+                        .document(taskModel.TaskId)
+                        .update("status", isChecked ? 1 : 0)
+                        .addOnFailureListener(exception -> {
+                            Toast.makeText(activity, "Could not update task", Toast.LENGTH_SHORT).show();
+                            int currentPosition = holder.getBindingAdapterPosition();
+                            if (currentPosition != RecyclerView.NO_POSITION) {
+                                notifyItemChanged(currentPosition);
+                            }
+                        })
+        );
     }
 
-    private boolean toBoolean(int status){
+    private boolean toBoolean(int status) {
         return status != 0;
     }
 
@@ -100,17 +115,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
         return taskList.size();
     }
 
-    public class MyViewHolder extends RecyclerView.ViewHolder{
+    public static class MyViewHolder extends RecyclerView.ViewHolder {
 
-        TextView tvDueDate;
-        CheckBox mCheckBox;
+        final TextView tvDueDate;
+        final CheckBox mCheckBox;
 
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
-
             tvDueDate = itemView.findViewById(R.id.tvDueDate);
             mCheckBox = itemView.findViewById(R.id.cbTaskDone);
-
         }
     }
 }
