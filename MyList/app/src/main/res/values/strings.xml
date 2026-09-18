@@ -6,6 +6,8 @@
     <string name="set_due_date">Set due date</string>
     <string name="add_task">Add task</string>
     <string name="due_on_format">Due on %1$s</string>
+    <string name="swipe_delete">Delete</string>
+    <string name="swipe_edit">Edit</string>
 
     <string name="onboarding_thanks">Thanks for downloading</string>
     <string name="onboarding_details">Manage and keep track of your tasks with ease.</string>

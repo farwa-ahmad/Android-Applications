@@ -6,6 +6,14 @@
     android:layout_height="match_parent"
     android:background="@drawable/gradient_list">
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTasks"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingTop="72dp"
+        android:paddingBottom="96dp" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAccount"
         style="?attr/materialButtonOutlinedStyle"
@@ -15,16 +23,9 @@
         android:layout_alignParentEnd="true"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="16dp"
+        android:elevation="8dp"
         android:text="@string/account"
         android:textAllCaps="false" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvTasks"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingTop="72dp"
-        android:paddingBottom="96dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddTask"

@@ -70,11 +70,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
         holder.taskCheckBox.setText(taskModel.getTask());
 
         String dueDate = taskModel.getDue();
-        holder.dueDateText.setText(
-                dueDate == null || dueDate.isEmpty()
-                        ? context.getString(R.string.set_due_date)
-                        : context.getString(R.string.due_on_format, dueDate)
-        );
+        boolean hasDueDate = dueDate != null && !dueDate.trim().isEmpty();
+        holder.dueDateText.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
+        if (hasDueDate) {
+            holder.dueDateText.setText(context.getString(R.string.due_on_format, dueDate));
+        }
 
         holder.taskCheckBox.setOnCheckedChangeListener(null);
         holder.taskCheckBox.setChecked(taskModel.getStatus() != 0);
