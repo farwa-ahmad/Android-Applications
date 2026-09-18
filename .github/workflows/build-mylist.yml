@@ -28,7 +28,8 @@ jobs:
           java-version: "17"
 
       - name: Install Android SDK platform
-        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37"
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37"
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
