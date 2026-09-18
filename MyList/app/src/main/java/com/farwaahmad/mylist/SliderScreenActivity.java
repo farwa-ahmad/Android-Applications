@@ -30,7 +30,8 @@ public class SliderScreenActivity extends AppCompatActivity {
 
         binding.btnNext.setOnClickListener(v -> {
             launchManager.setFirstLaunch(false);
-            startActivity(new Intent(this, MainActivity.class));
+            Intent intent = new Intent(this, SplashScreenActivity.class);
+            startActivity(intent);
             finish();
         });
     }

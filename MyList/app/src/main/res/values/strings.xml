@@ -38,9 +38,9 @@
     <string name="connection_error_message">Check your internet connection and try again.</string>
     <string name="retry">Retry</string>
 
-    <string name="onboarding_title">Your tasks, without the setup</string>
-    <string name="onboarding_details">Start adding tasks right away. Back them up later if you want to keep them after reinstalling or changing phones.</string>
-    <string name="get_started">Get started</string>
+    <string name="onboarding_thanks">Thanks for downloading</string>
+    <string name="onboarding_details">Manage and keep track of your tasks with ease.</string>
+    <string name="next">Next</string>
     <string name="app_logo_description">My List logo</string>
 
     <string name="delete_task_title">Delete task</string>

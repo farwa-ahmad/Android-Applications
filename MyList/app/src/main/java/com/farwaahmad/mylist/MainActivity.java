@@ -20,6 +20,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity
     private LaunchManager launchManager;
     private boolean activityStarted;
     private boolean signInInProgress;
+    private boolean initialStateReady;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +75,37 @@ public class MainActivity extends AppCompatActivity
         binding.btnAccount.setOnClickListener(v -> openAccountSheet());
         binding.btnRetry.setOnClickListener(v -> retryLoading());
 
-        showLoading(true);
+        consumePreloadedState();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void consumePreloadedState() {
+        boolean loadFailed = getIntent().getBooleanExtra(
+                SplashScreenActivity.EXTRA_INITIAL_LOAD_FAILED,
+                false
+        );
+
+        Serializable serializable = getIntent().getSerializableExtra(
+                SplashScreenActivity.EXTRA_INITIAL_TASKS
+        );
+
+        if (serializable instanceof ArrayList<?>) {
+            for (Object item : (ArrayList<?>) serializable) {
+                if (item instanceof TaskModel) {
+                    tasks.add((TaskModel) item);
+                }
+            }
+            taskAdapter.submitTasks(tasks);
+            initialStateReady = true;
+            showContentState();
+        } else {
+            showLoading(true);
+        }
+
+        if (loadFailed) {
+            initialStateReady = true;
+            showConnectionError();
+        }
     }
 
     @Override
@@ -101,7 +133,10 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        showLoading(true);
+        if (!initialStateReady) {
+            showLoading(true);
+        }
+
         signInInProgress = true;
         authRepository.ensureUser(new AuthRepository.AuthCallback() {
             @Override
@@ -121,6 +156,7 @@ public class MainActivity extends AppCompatActivity
 
                 binding.fabAddTask.setEnabled(false);
                 binding.btnAccount.setEnabled(false);
+                initialStateReady = true;
                 showConnectionError();
                 Toast.makeText(MainActivity.this, R.string.auth_error, Toast.LENGTH_LONG).show();
             }
@@ -130,7 +166,10 @@ public class MainActivity extends AppCompatActivity
     private void startListeningForTasks(@NonNull FirebaseUser user) {
         stopListeningForTasks();
 
-        showLoading(true);
+        if (!initialStateReady) {
+            showLoading(true);
+        }
+
         taskRepository = new TaskRepository(user.getUid());
         binding.fabAddTask.setEnabled(true);
         binding.btnAccount.setEnabled(true);
@@ -141,15 +180,18 @@ public class MainActivity extends AppCompatActivity
                 tasks.clear();
                 tasks.addAll(updatedTasks);
                 taskAdapter.submitTasks(tasks);
+                initialStateReady = true;
                 showContentState();
                 showSwipeHintOnce();
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
-                showContentState();
+                initialStateReady = true;
                 if (tasks.isEmpty()) {
                     showConnectionError();
+                } else {
+                    showContentState();
                 }
                 Toast.makeText(
                         MainActivity.this,
@@ -161,6 +203,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void retryLoading() {
+        initialStateReady = false;
         showLoading(true);
         FirebaseUser user = authRepository.getCurrentUser();
         if (user != null) {
@@ -171,7 +214,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void showLoading(boolean loading) {
-        binding.loadingState.setVisibility(loading ? android.view.View.VISIBLE : android.view.View.GONE);
+        binding.loadingState.setVisibility(
+                loading ? android.view.View.VISIBLE : android.view.View.GONE
+        );
         if (loading) {
             binding.emptyState.setVisibility(android.view.View.GONE);
         }
@@ -229,6 +274,7 @@ public class MainActivity extends AppCompatActivity
         stopListeningForTasks();
         tasks.clear();
         taskAdapter.submitTasks(tasks);
+        initialStateReady = false;
         startListeningForTasks(user);
     }
 
@@ -352,7 +398,9 @@ public class MainActivity extends AppCompatActivity
                                    @NonNull String password,
                                    @NonNull AccountBottomSheet.ActionCallback callback) {
         if (!tasks.isEmpty()) {
-            callback.onError(new IllegalStateException(getString(R.string.restore_blocked_with_tasks)));
+            callback.onError(new IllegalStateException(
+                    getString(R.string.restore_blocked_with_tasks)
+            ));
             return;
         }
 
@@ -377,6 +425,7 @@ public class MainActivity extends AppCompatActivity
         stopListeningForTasks();
         tasks.clear();
         taskAdapter.submitTasks(tasks);
+        initialStateReady = false;
         authRepository.signOut();
         ensureSignedIn();
     }
@@ -402,6 +451,7 @@ public class MainActivity extends AppCompatActivity
                                 tasks.clear();
                                 taskAdapter.submitTasks(tasks);
                                 taskRepository = null;
+                                initialStateReady = false;
                                 callback.onSuccess();
                                 ensureSignedIn();
                             }

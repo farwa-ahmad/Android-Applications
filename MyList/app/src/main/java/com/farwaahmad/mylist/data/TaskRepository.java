@@ -39,6 +39,15 @@ public class TaskRepository {
                 .collection(TASKS_COLLECTION);
     }
 
+    public void loadTasksOnce(@NonNull TaskListener listener) {
+        tasks()
+                .orderBy("time", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snapshot ->
+                        listener.onTasksChanged(mapTasks(snapshot)))
+                .addOnFailureListener(listener::onError);
+    }
+
     public ListenerRegistration listenForTasks(@NonNull TaskListener listener) {
         return tasks()
                 .orderBy("time", Query.Direction.DESCENDING)
@@ -54,17 +63,21 @@ public class TaskRepository {
                         return;
                     }
 
-                    List<TaskModel> taskList = new ArrayList<>();
-                    for (DocumentSnapshot document : value.getDocuments()) {
-                        TaskModel task = document.toObject(TaskModel.class);
-                        if (task != null) {
-                            task.setId(document.getId());
-                            taskList.add(task);
-                        }
-                    }
-
-                    listener.onTasksChanged(taskList);
+                    listener.onTasksChanged(mapTasks(value));
                 });
+    }
+
+    @NonNull
+    private List<TaskModel> mapTasks(@NonNull QuerySnapshot snapshot) {
+        List<TaskModel> taskList = new ArrayList<>();
+        for (DocumentSnapshot document : snapshot.getDocuments()) {
+            TaskModel task = document.toObject(TaskModel.class);
+            if (task != null) {
+                task.setId(document.getId());
+                taskList.add(task);
+            }
+        }
+        return taskList;
     }
 
     public void addTask(@NonNull String taskText,
