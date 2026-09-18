@@ -1,4 +1,4 @@
-package com.example.mylist;
+package com.farwaahmad.mylist;
 
 import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
@@ -8,7 +8,7 @@ import android.os.Looper;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.mylist.databinding.ActivitySplashScreenBinding;
+import com.farwaahmad.mylist.databinding.ActivitySplashScreenBinding;
 
 public class SplashScreenActivity extends AppCompatActivity {
 
@@ -31,7 +31,6 @@ public class SplashScreenActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         launchManager = new LaunchManager(this);
-
         binding = ActivitySplashScreenBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 

@@ -1,4 +1,4 @@
-package com.example.mylist;
+package com.farwaahmad.mylist;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -15,9 +15,7 @@ public class LaunchManager {
     }
 
     public void setFirstLaunch(boolean isFirst) {
-        sharedPreferences.edit()
-                .putBoolean(IS_FIRST_TIME, isFirst)
-                .apply();
+        sharedPreferences.edit().putBoolean(IS_FIRST_TIME, isFirst).apply();
     }
 
     public boolean isFirstTime() {

@@ -21,6 +21,7 @@
     <string name="task_updated">Task updated</string>
     <string name="task_saved">Task saved</string>
     <string name="generic_error">Something went wrong</string>
+    <string name="auth_error">Could not create your private task account. Check the Firebase Authentication setup.</string>
     <string name="load_tasks_error">Could not load tasks</string>
     <string name="delete_task_error">Could not delete task</string>
     <string name="update_task_error">Could not update task</string>

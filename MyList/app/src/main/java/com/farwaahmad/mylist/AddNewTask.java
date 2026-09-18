@@ -1,4 +1,4 @@
-package com.example.mylist;
+package com.farwaahmad.mylist;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
@@ -15,7 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
-import com.example.mylist.databinding.AddTaskLayoutBinding;
+import com.farwaahmad.mylist.databinding.AddTaskLayoutBinding;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.util.Calendar;
@@ -78,18 +78,11 @@ public class AddNewTask extends BottomSheetDialogFragment {
         updateSaveButtonState(binding.etTaskText.getText());
 
         binding.etTaskText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 updateSaveButtonState(s);
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
         binding.tvSetDueDate.setOnClickListener(v -> showDatePicker());
@@ -136,9 +129,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 new SaveCallback() {
                     @Override
                     public void onSuccess() {
-                        if (!isAdded()) {
-                            return;
-                        }
+                        if (!isAdded()) return;
                         Toast.makeText(
                                 requireContext(),
                                 isUpdate ? R.string.task_updated : R.string.task_saved,
@@ -149,9 +140,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
                     @Override
                     public void onError(@NonNull Exception exception) {
-                        if (!isAdded()) {
-                            return;
-                        }
+                        if (!isAdded()) return;
                         binding.btnSave.setEnabled(true);
                         String message = exception.getMessage() != null
                                 ? exception.getMessage()
@@ -204,7 +193,6 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     public interface SaveCallback {
         void onSuccess();
-
         void onError(@NonNull Exception exception);
     }
 }

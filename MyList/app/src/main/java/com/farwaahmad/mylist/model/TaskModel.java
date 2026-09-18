@@ -1,4 +1,4 @@
-package com.example.mylist.Models;
+package com.farwaahmad.mylist.model;
 
 import com.google.firebase.firestore.Exclude;
 

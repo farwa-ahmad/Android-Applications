@@ -1,4 +1,4 @@
-package com.example.mylist.Adapters;
+package com.farwaahmad.mylist.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -11,8 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.mylist.Models.TaskModel;
-import com.example.mylist.R;
+import com.farwaahmad.mylist.R;
+import com.farwaahmad.mylist.model.TaskModel;
 
 import java.util.List;
 
@@ -67,7 +67,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         TaskModel taskModel = taskList.get(position);
-
         holder.taskCheckBox.setText(taskModel.getTask());
 
         String dueDate = taskModel.getDue();
@@ -79,7 +78,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
 
         holder.taskCheckBox.setOnCheckedChangeListener(null);
         holder.taskCheckBox.setChecked(taskModel.getStatus() != 0);
-
         holder.taskCheckBox.setOnCheckedChangeListener((buttonView, isChecked) ->
                 actionListener.onTaskStatusChanged(taskModel, isChecked)
         );
@@ -99,7 +97,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
-
         final TextView dueDateText;
         final CheckBox taskCheckBox;
 
