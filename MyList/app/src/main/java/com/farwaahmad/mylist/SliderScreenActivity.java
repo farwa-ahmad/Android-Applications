@@ -11,10 +11,13 @@ import com.farwaahmad.mylist.databinding.ActivitySliderScreenBinding;
 public class SliderScreenActivity extends AppCompatActivity {
 
     private ActivitySliderScreenBinding binding;
+    private LaunchManager launchManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        launchManager = new LaunchManager(this);
 
         binding = ActivitySliderScreenBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -26,6 +29,7 @@ public class SliderScreenActivity extends AppCompatActivity {
         animationDrawable.start();
 
         binding.btnNext.setOnClickListener(v -> {
+            launchManager.setFirstLaunch(false);
             startActivity(new Intent(this, MainActivity.class));
             finish();
         });

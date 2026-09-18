@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:fillViewport="true">
@@ -8,14 +9,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingStart="24dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="28dp">
 
         <TextView
             android:id="@+id/tvAccountStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textSize="22sp" />
+            android:textColor="@color/secondary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvAccountDetails"
@@ -25,51 +30,116 @@
             android:textSize="15sp" />
 
         <LinearLayout
-            android:id="@+id/anonymousSection"
+            android:id="@+id/anonymousChooser"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="22dp"
             android:orientation="vertical">
 
-            <EditText
-                android:id="@+id/etEmail"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnProtectTasks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/email"
-                android:inputType="textEmailAddress"
-                android:importantForAutofill="yes"
-                android:autofillHints="emailAddress" />
+                android:text="@string/protect_my_tasks"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/secondary" />
 
-            <EditText
-                android:id="@+id/etPassword"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnExistingAccount"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:hint="@string/password"
-                android:inputType="textPassword"
-                android:importantForAutofill="yes"
-                android:autofillHints="password" />
-
-            <Button
-                android:id="@+id/btnBackup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/back_up_tasks" />
+                android:layout_marginTop="10dp"
+                android:text="@string/already_have_account"
+                android:textAllCaps="false"
+                app:strokeColor="@color/secondary" />
 
             <TextView
-                android:id="@+id/tvRestoreHint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:textSize="13sp" />
-
-            <Button
-                android:id="@+id/btnRestore"
+                android:id="@+id/tvExistingAccountHint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/restore_existing_backup" />
+                android:text="@string/restore_existing_hint"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/credentialsForm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBackCredentials"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/back"
+                android:textAllCaps="false" />
+
+            <TextView
+                android:id="@+id/tvFormTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/secondary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvFormDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textSize="13sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/emailInputLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:hint="@string/email">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="emailAddress"
+                    android:importantForAutofill="yes"
+                    android:inputType="textEmailAddress" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/passwordInputLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="@string/password"
+                app:endIconMode="password_toggle">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="password"
+                    android:importantForAutofill="yes"
+                    android:inputType="textPassword" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCredentialsAction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/secondary" />
 
         </LinearLayout>
 
@@ -81,19 +151,31 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSignOut"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/sign_out" />
+                android:text="@string/sign_out"
+                android:textAllCaps="false"
+                app:strokeColor="@color/secondary" />
 
         </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/accountProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:indicatorColor="@color/primary" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="30dp"
             android:text="@string/data_control_title"
+            android:textColor="@color/secondary"
             android:textStyle="bold" />
 
         <TextView
@@ -103,22 +185,35 @@
             android:text="@string/data_control_details"
             android:textSize="13sp" />
 
-        <EditText
-            android:id="@+id/etDeletePassword"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/deletePasswordInputLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:hint="@string/password_to_delete"
-            android:inputType="textPassword"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:endIconMode="password_toggle">
 
-        <Button
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDeletePassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDeleteData"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="@string/delete_my_data" />
+            android:text="@string/delete_my_data"
+            android:textAllCaps="false"
+            android:textColor="@color/delete_color"
+            app:strokeColor="@color/delete_color" />
 
     </LinearLayout>
 
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

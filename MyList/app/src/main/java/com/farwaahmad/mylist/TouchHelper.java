@@ -30,6 +30,15 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
     }
 
     @Override
+    public int getSwipeDirs(@NonNull RecyclerView recyclerView,
+                            @NonNull RecyclerView.ViewHolder viewHolder) {
+        int position = viewHolder.getBindingAdapterPosition();
+        return taskAdapter.isTaskPosition(position)
+                ? super.getSwipeDirs(recyclerView, viewHolder)
+                : 0;
+    }
+
+    @Override
     public boolean onMove(@NonNull RecyclerView recyclerView,
                           @NonNull RecyclerView.ViewHolder viewHolder,
                           @NonNull RecyclerView.ViewHolder target) {
@@ -38,7 +47,7 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
 
     @Override
     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-        final int position = viewHolder.getAdapterPosition();
+        int position = viewHolder.getBindingAdapterPosition();
         if (position == RecyclerView.NO_POSITION) {
             return;
         }
@@ -99,37 +108,14 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
                 backgroundPaint
         );
 
-        Drawable icon = ContextCompat.getDrawable(
-                taskAdapter.getContext(),
-                R.drawable.ic_baseline_delete_24
+        drawAction(
+                canvas,
+                itemView,
+                R.drawable.ic_baseline_delete_24,
+                R.string.swipe_delete,
+                false,
+                dX
         );
-        if (icon == null) {
-            return;
-        }
-
-        int iconSize = dpToPx(24);
-        int margin = dpToPx(24);
-        int centerY = itemView.getTop() + itemView.getHeight() / 2;
-        int iconRight = itemView.getRight() - margin;
-        int iconLeft = iconRight - iconSize;
-        int iconTop = centerY - iconSize / 2;
-        int iconBottom = iconTop + iconSize;
-
-        Rect oldBounds = icon.copyBounds();
-        icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-
-        if (Math.abs(dX) > dpToPx(56)) {
-            icon.draw(canvas);
-            textPaint.setTextAlign(Paint.Align.RIGHT);
-            canvas.drawText(
-                    taskAdapter.getContext().getString(R.string.swipe_delete),
-                    iconLeft - dpToPx(12),
-                    baselineForCenter(centerY),
-                    textPaint
-            );
-        }
-
-        icon.setBounds(oldBounds);
     }
 
     private void drawEditCue(@NonNull Canvas canvas, @NonNull View itemView, float dX) {
@@ -144,10 +130,27 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
                 backgroundPaint
         );
 
-        Drawable icon = ContextCompat.getDrawable(
-                taskAdapter.getContext(),
-                R.drawable.ic_baseline_edit_24
+        drawAction(
+                canvas,
+                itemView,
+                R.drawable.ic_baseline_edit_24,
+                R.string.swipe_edit,
+                true,
+                dX
         );
+    }
+
+    private void drawAction(@NonNull Canvas canvas,
+                            @NonNull View itemView,
+                            int iconRes,
+                            int labelRes,
+                            boolean onLeft,
+                            float dX) {
+        if (Math.abs(dX) <= dpToPx(52)) {
+            return;
+        }
+
+        Drawable icon = ContextCompat.getDrawable(taskAdapter.getContext(), iconRes);
         if (icon == null) {
             return;
         }
@@ -155,26 +158,44 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
         int iconSize = dpToPx(24);
         int margin = dpToPx(24);
         int centerY = itemView.getTop() + itemView.getHeight() / 2;
-        int iconLeft = itemView.getLeft() + margin;
-        int iconRight = iconLeft + iconSize;
-        int iconTop = centerY - iconSize / 2;
-        int iconBottom = iconTop + iconSize;
 
-        Rect oldBounds = icon.copyBounds();
-        icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-
-        if (dX > dpToPx(56)) {
+        if (onLeft) {
+            int iconLeft = itemView.getLeft() + margin;
+            int iconRight = iconLeft + iconSize;
+            icon.setBounds(
+                    iconLeft,
+                    centerY - iconSize / 2,
+                    iconRight,
+                    centerY + iconSize / 2
+            );
             icon.draw(canvas);
+
             textPaint.setTextAlign(Paint.Align.LEFT);
             canvas.drawText(
-                    taskAdapter.getContext().getString(R.string.swipe_edit),
+                    taskAdapter.getContext().getString(labelRes),
                     iconRight + dpToPx(12),
                     baselineForCenter(centerY),
                     textPaint
             );
-        }
+        } else {
+            int iconRight = itemView.getRight() - margin;
+            int iconLeft = iconRight - iconSize;
+            icon.setBounds(
+                    iconLeft,
+                    centerY - iconSize / 2,
+                    iconRight,
+                    centerY + iconSize / 2
+            );
+            icon.draw(canvas);
 
-        icon.setBounds(oldBounds);
+            textPaint.setTextAlign(Paint.Align.RIGHT);
+            canvas.drawText(
+                    taskAdapter.getContext().getString(labelRes),
+                    iconLeft - dpToPx(12),
+                    baselineForCenter(centerY),
+                    textPaint
+            );
+        }
     }
 
     private float baselineForCenter(int centerY) {

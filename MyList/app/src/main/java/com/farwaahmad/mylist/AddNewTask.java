@@ -3,19 +3,18 @@ package com.farwaahmad.mylist;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.DatePicker;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 
 import com.farwaahmad.mylist.databinding.AddTaskLayoutBinding;
+import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.util.Calendar;
@@ -67,59 +66,109 @@ public class AddNewTask extends BottomSheetDialogFragment {
         if (arguments != null) {
             isUpdate = true;
             id = arguments.getString(ARG_ID, "");
-            dueDate = arguments.getString(ARG_DUE, "");
-
-            binding.etTaskText.setText(arguments.getString(ARG_TASK, ""));
-            binding.tvSetDueDate.setText(
-                    dueDate.isEmpty() ? getString(R.string.set_due_date) : dueDate
+            dueDate = TaskDateUtils.normalizeForStorage(
+                    arguments.getString(ARG_DUE, "")
             );
+
+            binding.tvSheetTitle.setText(R.string.edit_task);
+            binding.etTaskText.setText(arguments.getString(ARG_TASK, ""));
+        } else {
+            binding.tvSheetTitle.setText(R.string.new_task);
         }
 
-        updateSaveButtonState(binding.etTaskText.getText());
+        updateDueDateUi();
+        updateSaveButtonState();
 
-        binding.etTaskText.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateSaveButtonState(s);
+        binding.etTaskText.addTextChangedListener(new SimpleTextWatcher(this::updateSaveButtonState));
+        binding.etTaskText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE && binding.btnSave.isEnabled()) {
+                saveTask();
+                return true;
             }
-            @Override public void afterTextChanged(Editable s) {}
+            return false;
         });
 
-        binding.tvSetDueDate.setOnClickListener(v -> showDatePicker());
+        binding.btnDueDate.setOnClickListener(v -> showDatePicker());
+        binding.btnClearDueDate.setOnClickListener(v -> {
+            dueDate = "";
+            updateDueDateUi();
+        });
         binding.btnSave.setOnClickListener(v -> saveTask());
+
+        if (!isUpdate) {
+            binding.etTaskText.requestFocus();
+            binding.etTaskText.postDelayed(() -> {
+                if (!isAdded() || binding == null) {
+                    return;
+                }
+                InputMethodManager inputMethodManager =
+                        (InputMethodManager) requireContext()
+                                .getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.showSoftInput(
+                        binding.etTaskText,
+                        InputMethodManager.SHOW_IMPLICIT
+                );
+            }, 180);
+        }
     }
 
     private void showDatePicker() {
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = TaskDateUtils.calendarForDue(dueDate);
+        if (calendar == null) {
+            calendar = Calendar.getInstance();
+        }
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
-                new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view,
-                                          int selectedYear,
-                                          int selectedMonth,
-                                          int dayOfMonth) {
-                        int displayMonth = selectedMonth + 1;
-                        dueDate = dayOfMonth + "/" + displayMonth + "/" + selectedYear;
-                        binding.tvSetDueDate.setText(dueDate);
-                    }
+                (picker, selectedYear, selectedMonth, dayOfMonth) -> {
+                    dueDate = TaskDateUtils.toStorageDate(
+                            selectedYear,
+                            selectedMonth,
+                            dayOfMonth
+                    );
+                    updateDueDateUi();
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DATE)
+                calendar.get(Calendar.DAY_OF_MONTH)
         );
+
         datePickerDialog.show();
     }
 
-    private void saveTask() {
-        String taskText = binding.etTaskText.getText().toString().trim();
-        if (taskText.isEmpty()) {
-            Toast.makeText(requireContext(), R.string.no_task_entered, Toast.LENGTH_SHORT).show();
+    private void updateDueDateUi() {
+        boolean hasDueDate = !dueDate.isEmpty();
+        binding.btnClearDueDate.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
+
+        if (!hasDueDate) {
+            binding.btnDueDate.setText(R.string.add_due_date);
             return;
         }
 
-        binding.btnSave.setEnabled(false);
+        binding.btnDueDate.setText(
+                getString(
+                        R.string.due_picker_format,
+                        TaskDateUtils.formatForDisplay(requireContext(), dueDate)
+                )
+        );
+    }
+
+    private void saveTask() {
+        if (binding == null || taskSaveListener == null) {
+            return;
+        }
+
+        String taskText = binding.etTaskText.getText() == null
+                ? ""
+                : binding.etTaskText.getText().toString().trim();
+
+        if (taskText.isEmpty()) {
+            binding.taskInputLayout.setError(getString(R.string.no_task_entered));
+            return;
+        }
+
+        binding.taskInputLayout.setError(null);
+        setSaving(true);
 
         taskSaveListener.onTaskSaveRequested(
                 id,
@@ -129,7 +178,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 new SaveCallback() {
                     @Override
                     public void onSuccess() {
-                        if (!isAdded()) return;
+                        if (!isAdded()) {
+                            return;
+                        }
+
                         Toast.makeText(
                                 requireContext(),
                                 isUpdate ? R.string.task_updated : R.string.task_saved,
@@ -140,26 +192,40 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
                     @Override
                     public void onError(@NonNull Exception exception) {
-                        if (!isAdded()) return;
-                        binding.btnSave.setEnabled(true);
-                        String message = exception.getMessage() != null
-                                ? exception.getMessage()
-                                : getString(R.string.generic_error);
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                        if (!isAdded() || binding == null) {
+                            return;
+                        }
+
+                        setSaving(false);
+                        Toast.makeText(
+                                requireContext(),
+                                R.string.save_task_error,
+                                Toast.LENGTH_SHORT
+                        ).show();
                     }
                 }
         );
     }
 
-    private void updateSaveButtonState(CharSequence text) {
-        boolean hasText = text != null && !text.toString().trim().isEmpty();
+    private void setSaving(boolean saving) {
+        binding.btnSave.setEnabled(!saving);
+        binding.btnDueDate.setEnabled(!saving);
+        binding.btnClearDueDate.setEnabled(!saving);
+        binding.etTaskText.setEnabled(!saving);
+        binding.btnSave.setText(saving ? R.string.saving : R.string.save_task);
+    }
+
+    private void updateSaveButtonState() {
+        if (binding == null) {
+            return;
+        }
+
+        boolean hasText = binding.etTaskText.getText() != null
+                && !binding.etTaskText.getText().toString().trim().isEmpty();
         binding.btnSave.setEnabled(hasText);
-        binding.btnSave.setTextColor(
-                ContextCompat.getColor(
-                        requireContext(),
-                        hasText ? R.color.primary : R.color.dark_gray
-                )
-        );
+        if (hasText) {
+            binding.taskInputLayout.setError(null);
+        }
     }
 
     @Override
@@ -193,6 +259,29 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     public interface SaveCallback {
         void onSuccess();
+
         void onError(@NonNull Exception exception);
+    }
+
+    private static class SimpleTextWatcher implements android.text.TextWatcher {
+
+        private final Runnable onChanged;
+
+        SimpleTextWatcher(@NonNull Runnable onChanged) {
+            this.onChanged = onChanged;
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            onChanged.run();
+        }
+
+        @Override
+        public void afterTextChanged(android.text.Editable s) {
+        }
     }
 }

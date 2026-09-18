@@ -7,6 +7,7 @@ public class LaunchManager {
 
     private static final String PREF_NAME = "LaunchManager";
     private static final String IS_FIRST_TIME = "isFirst";
+    private static final String SWIPE_HINT_SHOWN = "swipeHintShown";
 
     private final SharedPreferences sharedPreferences;
 
@@ -20,5 +21,13 @@ public class LaunchManager {
 
     public boolean isFirstTime() {
         return sharedPreferences.getBoolean(IS_FIRST_TIME, true);
+    }
+
+    public boolean shouldShowSwipeHint() {
+        return !sharedPreferences.getBoolean(SWIPE_HINT_SHOWN, false);
+    }
+
+    public void markSwipeHintShown() {
+        sharedPreferences.edit().putBoolean(SWIPE_HINT_SHOWN, true).apply();
     }
 }

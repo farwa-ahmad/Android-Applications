@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,6 +16,7 @@ import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.data.TaskRepository;
 import com.farwaahmad.mylist.databinding.ActivityMainBinding;
 import com.farwaahmad.mylist.model.TaskModel;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity
     private AuthRepository authRepository;
     private TaskRepository taskRepository;
     private ListenerRegistration listenerRegistration;
+    private LaunchManager launchManager;
     private boolean activityStarted;
     private boolean signInInProgress;
 
@@ -44,6 +47,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(binding.getRoot());
 
         authRepository = new AuthRepository();
+        launchManager = new LaunchManager(this);
 
         AnimationDrawable animationDrawable =
                 (AnimationDrawable) binding.rlBackground.getBackground();
@@ -53,18 +57,23 @@ public class MainActivity extends AppCompatActivity
 
         binding.rvTasks.setLayoutManager(new LinearLayoutManager(this));
 
-        taskAdapter = new TaskAdapter(this, tasks, this);
+        taskAdapter = new TaskAdapter(this, this);
         binding.rvTasks.setAdapter(taskAdapter);
 
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new TouchHelper(taskAdapter));
         itemTouchHelper.attachToRecyclerView(binding.rvTasks);
 
         binding.fabAddTask.setEnabled(false);
+        binding.btnAccount.setEnabled(false);
+
         binding.fabAddTask.setOnClickListener(v ->
                 AddNewTask.newInstance().show(getSupportFragmentManager(), AddNewTask.TAG)
         );
 
         binding.btnAccount.setOnClickListener(v -> openAccountSheet());
+        binding.btnRetry.setOnClickListener(v -> retryLoading());
+
+        showLoading(true);
     }
 
     @Override
@@ -88,8 +97,11 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        if (signInInProgress) return;
+        if (signInInProgress) {
+            return;
+        }
 
+        showLoading(true);
         signInInProgress = true;
         authRepository.ensureUser(new AuthRepository.AuthCallback() {
             @Override
@@ -103,8 +115,13 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onError(@NonNull Exception exception) {
                 signInInProgress = false;
-                if (!activityStarted) return;
+                if (!activityStarted) {
+                    return;
+                }
+
                 binding.fabAddTask.setEnabled(false);
+                binding.btnAccount.setEnabled(false);
+                showConnectionError();
                 Toast.makeText(MainActivity.this, R.string.auth_error, Toast.LENGTH_LONG).show();
             }
         });
@@ -113,22 +130,78 @@ public class MainActivity extends AppCompatActivity
     private void startListeningForTasks(@NonNull FirebaseUser user) {
         stopListeningForTasks();
 
+        showLoading(true);
         taskRepository = new TaskRepository(user.getUid());
         binding.fabAddTask.setEnabled(true);
+        binding.btnAccount.setEnabled(true);
 
         listenerRegistration = taskRepository.listenForTasks(new TaskRepository.TaskListener() {
             @Override
             public void onTasksChanged(@NonNull List<TaskModel> updatedTasks) {
                 tasks.clear();
                 tasks.addAll(updatedTasks);
-                taskAdapter.notifyDataSetChanged();
+                taskAdapter.submitTasks(tasks);
+                showContentState();
+                showSwipeHintOnce();
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
-                Toast.makeText(MainActivity.this, R.string.load_tasks_error, Toast.LENGTH_SHORT).show();
+                showContentState();
+                if (tasks.isEmpty()) {
+                    showConnectionError();
+                }
+                Toast.makeText(
+                        MainActivity.this,
+                        R.string.load_tasks_error,
+                        Toast.LENGTH_SHORT
+                ).show();
             }
         });
+    }
+
+    private void retryLoading() {
+        showLoading(true);
+        FirebaseUser user = authRepository.getCurrentUser();
+        if (user != null) {
+            startListeningForTasks(user);
+        } else {
+            ensureSignedIn();
+        }
+    }
+
+    private void showLoading(boolean loading) {
+        binding.loadingState.setVisibility(loading ? android.view.View.VISIBLE : android.view.View.GONE);
+        if (loading) {
+            binding.emptyState.setVisibility(android.view.View.GONE);
+        }
+    }
+
+    private void showContentState() {
+        showLoading(false);
+        binding.btnRetry.setVisibility(android.view.View.GONE);
+        binding.emptyState.setVisibility(
+                tasks.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE
+        );
+        binding.tvEmptyTitle.setText(R.string.empty_title);
+        binding.tvEmptyMessage.setText(R.string.empty_message);
+    }
+
+    private void showConnectionError() {
+        showLoading(false);
+        binding.emptyState.setVisibility(android.view.View.VISIBLE);
+        binding.tvEmptyTitle.setText(R.string.connection_error_title);
+        binding.tvEmptyMessage.setText(R.string.connection_error_message);
+        binding.btnRetry.setVisibility(android.view.View.VISIBLE);
+    }
+
+    private void showSwipeHintOnce() {
+        if (tasks.isEmpty() || !launchManager.shouldShowSwipeHint()) {
+            return;
+        }
+
+        Snackbar.make(binding.getRoot(), R.string.swipe_hint, Snackbar.LENGTH_LONG).show();
+        launchManager.markSwipeHintShown();
     }
 
     private void stopListeningForTasks() {
@@ -155,7 +228,7 @@ public class MainActivity extends AppCompatActivity
     private void resetForIdentityChange(@NonNull FirebaseUser user) {
         stopListeningForTasks();
         tasks.clear();
-        taskAdapter.notifyDataSetChanged();
+        taskAdapter.submitTasks(tasks);
         startListeningForTasks(user);
     }
 
@@ -169,31 +242,59 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    public void onDeleteTaskRequested(@NonNull TaskModel task, int adapterPosition) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.delete_task_title)
+                .setMessage(R.string.delete_task_message)
+                .setPositiveButton(R.string.yes, (dialog, which) ->
+                        onDeleteTask(task, adapterPosition)
+                )
+                .setNegativeButton(R.string.no, null)
+                .show();
+    }
+
+    @Override
     public void onDeleteTask(@NonNull TaskModel task, int adapterPosition) {
-        if (taskRepository == null) return;
+        if (taskRepository == null) {
+            return;
+        }
 
         taskRepository.deleteTask(task.getId(), new TaskRepository.OperationCallback() {
-            @Override public void onSuccess() {}
+            @Override
+            public void onSuccess() {
+            }
 
             @Override
             public void onError(@NonNull Exception exception) {
                 taskAdapter.restoreItem(adapterPosition);
-                Toast.makeText(MainActivity.this, R.string.delete_task_error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                        MainActivity.this,
+                        R.string.delete_task_error,
+                        Toast.LENGTH_SHORT
+                ).show();
             }
         });
     }
 
     @Override
     public void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete) {
-        if (taskRepository == null) return;
+        if (taskRepository == null) {
+            return;
+        }
 
         taskRepository.updateStatus(task.getId(), isComplete, new TaskRepository.OperationCallback() {
-            @Override public void onSuccess() {}
+            @Override
+            public void onSuccess() {
+            }
 
             @Override
             public void onError(@NonNull Exception exception) {
-                taskAdapter.notifyDataSetChanged();
-                Toast.makeText(MainActivity.this, R.string.update_task_error, Toast.LENGTH_SHORT).show();
+                taskAdapter.submitTasks(tasks);
+                Toast.makeText(
+                        MainActivity.this,
+                        R.string.update_task_error,
+                        Toast.LENGTH_SHORT
+                ).show();
             }
         });
     }
@@ -211,11 +312,13 @@ public class MainActivity extends AppCompatActivity
 
         TaskRepository.OperationCallback repositoryCallback =
                 new TaskRepository.OperationCallback() {
-                    @Override public void onSuccess() {
+                    @Override
+                    public void onSuccess() {
                         callback.onSuccess();
                     }
 
-                    @Override public void onError(@NonNull Exception exception) {
+                    @Override
+                    public void onError(@NonNull Exception exception) {
                         callback.onError(exception);
                     }
                 };
@@ -273,7 +376,7 @@ public class MainActivity extends AppCompatActivity
     public void onSignOutRequested() {
         stopListeningForTasks();
         tasks.clear();
-        taskAdapter.notifyDataSetChanged();
+        taskAdapter.submitTasks(tasks);
         authRepository.signOut();
         ensureSignedIn();
     }
@@ -297,7 +400,7 @@ public class MainActivity extends AppCompatActivity
                             public void onSuccess() {
                                 stopListeningForTasks();
                                 tasks.clear();
-                                taskAdapter.notifyDataSetChanged();
+                                taskAdapter.submitTasks(tasks);
                                 taskRepository = null;
                                 callback.onSuccess();
                                 ensureSignedIn();
