@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
@@ -17,6 +18,9 @@ import com.farwaahmad.mylist.adapter.TaskAdapter;
 public class TouchHelper extends ItemTouchHelper.SimpleCallback {
 
     private final TaskAdapter taskAdapter;
+    private static final int ACTION_OVERLAP_DP = 12;
+    private static final int ACTION_CORNER_RADIUS_DP = 14;
+
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -101,13 +105,15 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
         backgroundPaint.setColor(
                 ContextCompat.getColor(taskAdapter.getContext(), R.color.delete_color)
         );
-        canvas.drawRect(
-                itemView.getRight() + dX,
+        float overlap = dpToPx(ACTION_OVERLAP_DP);
+        RectF bounds = new RectF(
+                itemView.getRight() + dX - overlap,
                 itemView.getTop(),
                 itemView.getRight(),
-                itemView.getBottom(),
-                backgroundPaint
+                itemView.getBottom()
         );
+        float radius = dpToPx(ACTION_CORNER_RADIUS_DP);
+        canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
 
         drawAction(
                 canvas,
@@ -123,13 +129,15 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
         backgroundPaint.setColor(
                 ContextCompat.getColor(taskAdapter.getContext(), R.color.edit_color)
         );
-        canvas.drawRect(
+        float overlap = dpToPx(ACTION_OVERLAP_DP);
+        RectF bounds = new RectF(
                 itemView.getLeft(),
                 itemView.getTop(),
-                itemView.getLeft() + dX,
-                itemView.getBottom(),
-                backgroundPaint
+                itemView.getLeft() + dX + overlap,
+                itemView.getBottom()
         );
+        float radius = dpToPx(ACTION_CORNER_RADIUS_DP);
+        canvas.drawRoundRect(bounds, radius, radius, backgroundPaint);
 
         drawAction(
                 canvas,
