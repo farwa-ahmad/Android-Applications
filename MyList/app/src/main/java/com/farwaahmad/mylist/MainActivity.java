@@ -46,8 +46,18 @@ public class MainActivity extends AppCompatActivity
     private boolean activityStarted;
     private boolean signInInProgress;
     private boolean initialStateReady;
+    private static final int SWIPE_HINT_MAX_RETRIES = 20;
+    private static final long SWIPE_HINT_RETRY_DELAY_MS = 150L;
+
     private boolean pendingSwipeHintAfterSheetCloses;
+    private boolean swipeHintRetryScheduled;
+    private int swipeHintRetryCount;
     private String pendingSwipeHintTaskId;
+
+    private final Runnable swipeHintRetryRunnable = () -> {
+        swipeHintRetryScheduled = false;
+        showPendingSwipeHint();
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,6 +155,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStop() {
         activityStarted = false;
+        cancelSwipeHintRetry();
         stopListeningForTasks();
         super.onStop();
     }
@@ -276,12 +287,16 @@ public class MainActivity extends AppCompatActivity
 
         int position = taskAdapter.showSwipeHint(pendingSwipeHintTaskId);
         if (position == RecyclerView.NO_POSITION) {
+            scheduleSwipeHintRetry();
             return;
         }
+
+        cancelSwipeHintRetry();
 
         String taskId = pendingSwipeHintTaskId;
         pendingSwipeHintTaskId = null;
         pendingSwipeHintAfterSheetCloses = false;
+        swipeHintRetryCount = 0;
         launchManager.markSwipeHintShown();
 
         binding.rvTasks.smoothScrollToPosition(position);
@@ -289,6 +304,25 @@ public class MainActivity extends AppCompatActivity
                 () -> taskAdapter.animateSwipeHint(binding.rvTasks, taskId),
                 350L
         );
+    }
+
+    private void scheduleSwipeHintRetry() {
+        if (swipeHintRetryScheduled || swipeHintRetryCount >= SWIPE_HINT_MAX_RETRIES) {
+            return;
+        }
+
+        swipeHintRetryCount++;
+        swipeHintRetryScheduled = true;
+        binding.rvTasks.postDelayed(swipeHintRetryRunnable, SWIPE_HINT_RETRY_DELAY_MS);
+    }
+
+    private void cancelSwipeHintRetry() {
+        if (!swipeHintRetryScheduled) {
+            return;
+        }
+
+        binding.rvTasks.removeCallbacks(swipeHintRetryRunnable);
+        swipeHintRetryScheduled = false;
     }
 
     private void stopListeningForTasks() {
@@ -469,6 +503,8 @@ public class MainActivity extends AppCompatActivity
         }
 
         pendingSwipeHintAfterSheetCloses = true;
+        swipeHintRetryCount = 0;
+        cancelSwipeHintRetry();
         binding.rvTasks.post(this::showPendingSwipeHint);
     }
 

@@ -174,7 +174,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         bindGroupShape(taskHolder, row);
 
         boolean completed = task.getStatus() != 0;
-        taskHolder.taskCheckBox.setText(task.getTask());
+        taskHolder.taskTitle.setText(task.getTask());
         taskHolder.itemView.animate().cancel();
         taskHolder.itemView.setTranslationX(0f);
         taskHolder.itemView.setAlpha(completed ? 0.62f : 1f);
@@ -184,13 +184,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         taskHolder.swipeHint.setVisibility(showSwipeHint ? View.VISIBLE : View.GONE);
         taskHolder.dismissSwipeHint.setOnClickListener(v -> hideSwipeHint());
 
-        int flags = taskHolder.taskCheckBox.getPaintFlags();
+        int flags = taskHolder.taskTitle.getPaintFlags();
         if (completed) {
             flags |= Paint.STRIKE_THRU_TEXT_FLAG;
         } else {
             flags &= ~Paint.STRIKE_THRU_TEXT_FLAG;
         }
-        taskHolder.taskCheckBox.setPaintFlags(flags);
+        taskHolder.taskTitle.setPaintFlags(flags);
 
         bindDueDate(taskHolder, task, row.section, completed);
 
@@ -544,6 +544,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
         final MaterialCardView card;
         final TextView dueDateText;
+        final TextView taskTitle;
         final CheckBox taskCheckBox;
         final View swipeHint;
         final ImageButton dismissSwipeHint;
@@ -553,6 +554,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             super(itemView);
             card = (MaterialCardView) itemView;
             dueDateText = itemView.findViewById(R.id.tvDueDate);
+            taskTitle = itemView.findViewById(R.id.tvTaskTitle);
             taskCheckBox = itemView.findViewById(R.id.cbTaskDone);
             swipeHint = itemView.findViewById(R.id.swipeHint);
             dismissSwipeHint = itemView.findViewById(R.id.btnDismissSwipeHint);
