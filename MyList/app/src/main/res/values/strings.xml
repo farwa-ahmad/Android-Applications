@@ -66,10 +66,8 @@
     <string name="guest_account">Guest account</string>
     <string name="tasks_saved">Your tasks are saved</string>
     <string name="temporary_account_details">Your tasks are saved privately. Protect them with an email and password so you can recover them after reinstalling or changing phones.</string>
-    <string name="protect_section_title">Protect your tasks</string>
-    <string name="protect_section_details">Add an email and password so you can restore them if you reinstall the app or change phones.</string>
     <string name="tasks_protected">Your tasks are protected</string>
-    <string name="protected_account_details">Your tasks are protected and can be restored on another installation.</string>
+    <string name="protected_account_details">Your tasks are protected and can be restored.</string>
     <string name="backed_up_account_details">Signed in as %1$s. You can restore these tasks on another installation.</string>
     <string name="protect_my_tasks">Protect my tasks</string>
     <string name="already_have_account">I already have an account</string>
@@ -88,8 +86,8 @@
     <string name="backup_complete_verification_sent">Your tasks are protected. Check your inbox to verify your email.</string>
     <string name="backup_complete_verification_failed">Your tasks are protected, but the verification email could not be sent. You can resend it from Account.</string>
     <string name="restore_complete">Your protected tasks are connected.</string>
-    <string name="email_verified">Email verified</string>
-    <string name="email_not_verified">Email not verified</string>
+    <string name="verified_badge">✓ Verified</string>
+    <string name="not_verified_badge">Not verified</string>
     <string name="email_verification_hint">Verify your email so you know recovery messages can reach the right address.</string>
     <string name="resend_verification_email">Resend verification email</string>
     <string name="verification_email_sent">Verification email sent. Check your inbox.</string>

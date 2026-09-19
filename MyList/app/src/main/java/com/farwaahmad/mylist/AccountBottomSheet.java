@@ -119,6 +119,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
 
         if (isAnonymous) {
             binding.tvAccountStatus.setText(R.string.guest_account);
+            binding.tvVerificationStatus.setVisibility(View.GONE);
             binding.tvAccountDetails.setText(R.string.temporary_account_details);
             binding.anonymousChooser.setVisibility(View.VISIBLE);
             binding.credentialsForm.setVisibility(View.GONE);
@@ -136,6 +137,12 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             binding.tvAccountStatus.setText(
                     email.isEmpty() ? getString(R.string.tasks_protected) : email
             );
+            binding.tvVerificationStatus.setVisibility(View.VISIBLE);
+            binding.tvVerificationStatus.setText(
+                    emailVerified
+                            ? R.string.verified_badge
+                            : R.string.not_verified_badge
+            );
             binding.tvAccountDetails.setText(R.string.protected_account_details);
             binding.anonymousChooser.setVisibility(View.GONE);
             binding.credentialsForm.setVisibility(View.GONE);
@@ -143,11 +150,6 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             binding.deletePasswordInputLayout.setVisibility(View.GONE);
             binding.btnDeleteData.setText(R.string.delete_my_account_and_data);
 
-            binding.tvVerificationStatus.setText(
-                    emailVerified
-                            ? R.string.email_verified
-                            : R.string.email_not_verified
-            );
             binding.tvVerificationHint.setVisibility(
                     emailVerified ? View.GONE : View.VISIBLE
             );
