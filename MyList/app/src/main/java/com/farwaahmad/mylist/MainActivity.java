@@ -14,6 +14,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.farwaahmad.mylist.adapter.TaskAdapter;
 import com.farwaahmad.mylist.data.AuthRepository;
