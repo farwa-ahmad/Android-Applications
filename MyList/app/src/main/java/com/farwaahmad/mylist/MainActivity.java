@@ -288,10 +288,42 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
+        if (user.isAnonymous()) {
+            showAccountSheet(user);
+            return;
+        }
+
+        binding.btnAccount.setEnabled(false);
+        authRepository.reloadCurrentUser(new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(@NonNull FirebaseUser refreshedUser) {
+                binding.btnAccount.setEnabled(true);
+                showAccountSheet(refreshedUser);
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+                binding.btnAccount.setEnabled(true);
+                FirebaseUser currentUser = authRepository.getCurrentUser();
+                if (currentUser != null) {
+                    showAccountSheet(currentUser);
+                } else {
+                    Toast.makeText(
+                            MainActivity.this,
+                            R.string.auth_error,
+                            Toast.LENGTH_SHORT
+                    ).show();
+                }
+            }
+        });
+    }
+
+    private void showAccountSheet(@NonNull FirebaseUser user) {
         AccountBottomSheet.newInstance(
                 user.isAnonymous(),
                 user.getEmail(),
-                !tasks.isEmpty()
+                !tasks.isEmpty(),
+                user.isEmailVerified()
         ).show(getSupportFragmentManager(), AccountBottomSheet.TAG);
     }
 
@@ -426,10 +458,54 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onBackupRequested(@NonNull String email,
                                   @NonNull String password,
-                                  @NonNull AccountBottomSheet.ActionCallback callback) {
+                                  @NonNull AccountBottomSheet.BackupCallback callback) {
         authRepository.linkAnonymousWithEmail(email, password, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(@NonNull FirebaseUser user) {
+                authRepository.sendVerificationEmail(new AuthRepository.SimpleCallback() {
+                    @Override
+                    public void onSuccess() {
+                        callback.onSuccess(true);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception exception) {
+                        // The account is already linked, so backup succeeded even if
+                        // the verification email could not be sent right now.
+                        callback.onSuccess(false);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+                callback.onError(exception);
+            }
+        });
+    }
+
+    @Override
+    public void onPasswordResetRequested(@NonNull String email,
+                                         @NonNull AccountBottomSheet.ActionCallback callback) {
+        authRepository.sendPasswordResetEmail(email, new AuthRepository.SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                callback.onSuccess();
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+                callback.onError(exception);
+            }
+        });
+    }
+
+    @Override
+    public void onVerificationEmailRequested(
+            @NonNull AccountBottomSheet.ActionCallback callback) {
+        authRepository.sendVerificationEmail(new AuthRepository.SimpleCallback() {
+            @Override
+            public void onSuccess() {
                 callback.onSuccess();
             }
 

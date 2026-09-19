@@ -14,6 +14,7 @@ public class AuthRepository {
 
     public AuthRepository() {
         auth = FirebaseAuth.getInstance();
+        auth.useAppLanguage();
     }
 
     @Nullable
@@ -45,7 +46,9 @@ public class AuthRepository {
                                        @NonNull AuthCallback callback) {
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser == null || !currentUser.isAnonymous()) {
-            callback.onError(new IllegalStateException("No anonymous account is available to back up."));
+            callback.onError(new IllegalStateException(
+                    "No anonymous account is available to protect."
+            ));
             return;
         }
 
@@ -93,6 +96,51 @@ public class AuthRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public void reloadCurrentUser(@NonNull AuthCallback callback) {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
+            callback.onError(new IllegalStateException("No signed-in account."));
+            return;
+        }
+
+        currentUser.reload()
+                .addOnSuccessListener(unused -> {
+                    FirebaseUser refreshedUser = auth.getCurrentUser();
+                    if (refreshedUser != null) {
+                        callback.onSuccess(refreshedUser);
+                    } else {
+                        callback.onError(new IllegalStateException("Firebase returned no user."));
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void sendVerificationEmail(@NonNull SimpleCallback callback) {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null || currentUser.isAnonymous()) {
+            callback.onError(new IllegalStateException(
+                    "A protected account is required to verify an email."
+            ));
+            return;
+        }
+
+        if (currentUser.isEmailVerified()) {
+            callback.onSuccess();
+            return;
+        }
+
+        currentUser.sendEmailVerification()
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void sendPasswordResetEmail(@NonNull String email,
+                                       @NonNull SimpleCallback callback) {
+        auth.sendPasswordResetEmail(email)
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
     public void signOut() {
         auth.signOut();
     }
@@ -112,7 +160,9 @@ public class AuthRepository {
 
         String email = currentUser.getEmail();
         if (email == null || password == null || password.isBlank()) {
-            callback.onError(new IllegalArgumentException("Enter your password to delete this account."));
+            callback.onError(new IllegalArgumentException(
+                    "Enter your password to delete this account."
+            ));
             return;
         }
 

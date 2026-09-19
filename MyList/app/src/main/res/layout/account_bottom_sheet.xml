@@ -188,10 +188,22 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnForgotPassword"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_gravity="end"
+                android:minWidth="0dp"
+                android:text="@string/forgot_password"
+                android:textAllCaps="false"
+                android:textColor="@color/secondary"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCredentialsAction"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="8dp"
                 android:textAllCaps="false"
                 android:textColor="@color/task_action_button_text"
                 app:backgroundTint="@color/task_action_button_bg"
@@ -207,11 +219,42 @@
             android:orientation="vertical"
             android:visibility="gone">
 
+            <TextView
+                android:id="@+id/tvVerificationStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/secondary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvVerificationHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/email_verification_hint"
+                android:textColor="@color/dark_gray"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendVerification"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginTop="4dp"
+                android:minWidth="0dp"
+                android:text="@string/resend_verification_email"
+                android:textAllCaps="false"
+                android:textColor="@color/secondary"
+                android:visibility="gone" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSignOut"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
+                android:layout_marginTop="8dp"
                 android:text="@string/sign_out"
                 android:textAllCaps="false"
                 android:textColor="@color/secondary"

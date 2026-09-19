@@ -43,6 +43,7 @@
             android:hint="@string/task_hint"
             android:imeOptions="actionDone"
             android:inputType="textCapSentences"
+            android:maxLength="500"
             android:maxLines="1"
             android:minHeight="52dp"
             android:paddingStart="0dp"

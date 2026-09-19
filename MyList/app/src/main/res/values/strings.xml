@@ -85,7 +85,16 @@
     <string name="restore_existing_hint">Sign in to restore your protected tasks.</string>
     <string name="restore_blocked_with_tasks">Protect this task list first, then you can sign in to another account.</string>
     <string name="backup_complete">Your tasks are now protected.</string>
-    <string name="restore_complete">Your backed-up tasks are connected.</string>
+    <string name="backup_complete_verification_sent">Your tasks are protected. Check your inbox to verify your email.</string>
+    <string name="backup_complete_verification_failed">Your tasks are protected, but the verification email could not be sent. You can resend it from Account.</string>
+    <string name="restore_complete">Your protected tasks are connected.</string>
+    <string name="email_verified">Email verified</string>
+    <string name="email_not_verified">Email not verified</string>
+    <string name="email_verification_hint">Verify your email so you know recovery messages can reach the right address.</string>
+    <string name="resend_verification_email">Resend verification email</string>
+    <string name="verification_email_sent">Verification email sent. Check your inbox.</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="password_reset_sent">If an account exists for this email, password reset instructions have been sent.</string>
     <string name="enter_valid_email">Enter a valid email address.</string>
     <string name="password_minimum">Password must be at least 6 characters.</string>
     <string name="email_in_use_message">An account already exists with this email. Sign in instead.</string>

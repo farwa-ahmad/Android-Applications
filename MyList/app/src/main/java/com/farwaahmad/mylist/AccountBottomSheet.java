@@ -22,6 +22,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 
@@ -32,6 +33,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
     private static final String ARG_ANONYMOUS = "anonymous";
     private static final String ARG_EMAIL = "email";
     private static final String ARG_HAS_TASKS = "hasTasks";
+    private static final String ARG_EMAIL_VERIFIED = "emailVerified";
 
     private static final int MODE_NONE = 0;
     private static final int MODE_BACKUP = 1;
@@ -41,16 +43,19 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
     private AccountActionListener actionListener;
     private boolean isAnonymous;
     private boolean hasTasks;
+    private boolean emailVerified;
     private int formMode = MODE_NONE;
 
     public static AccountBottomSheet newInstance(boolean isAnonymous,
                                                  @Nullable String email,
-                                                 boolean hasTasks) {
+                                                 boolean hasTasks,
+                                                 boolean emailVerified) {
         AccountBottomSheet fragment = new AccountBottomSheet();
         Bundle args = new Bundle();
         args.putBoolean(ARG_ANONYMOUS, isAnonymous);
         args.putString(ARG_EMAIL, email == null ? "" : email);
         args.putBoolean(ARG_HAS_TASKS, hasTasks);
+        args.putBoolean(ARG_EMAIL_VERIFIED, emailVerified);
         fragment.setArguments(args);
         return fragment;
     }
@@ -71,6 +76,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         Bundle args = getArguments();
         isAnonymous = args == null || args.getBoolean(ARG_ANONYMOUS, true);
         hasTasks = args != null && args.getBoolean(ARG_HAS_TASKS, false);
+        emailVerified = args != null && args.getBoolean(ARG_EMAIL_VERIFIED, false);
         String email = args == null ? "" : args.getString(ARG_EMAIL, "");
 
         renderState(email);
@@ -79,6 +85,8 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         binding.btnExistingAccount.setOnClickListener(v -> showCredentialForm(MODE_RESTORE));
         binding.btnBackCredentials.setOnClickListener(v -> showChooser());
         binding.btnCredentialsAction.setOnClickListener(v -> submitCredentials());
+        binding.btnForgotPassword.setOnClickListener(v -> requestPasswordReset());
+        binding.btnSendVerification.setOnClickListener(v -> requestVerificationEmail());
         binding.btnSignOut.setOnClickListener(v -> confirmSignOut());
         binding.btnDeleteData.setOnClickListener(v -> confirmDelete());
     }
@@ -134,6 +142,18 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             binding.permanentSection.setVisibility(View.VISIBLE);
             binding.deletePasswordInputLayout.setVisibility(View.GONE);
             binding.btnDeleteData.setText(R.string.delete_my_account_and_data);
+
+            binding.tvVerificationStatus.setText(
+                    emailVerified
+                            ? R.string.email_verified
+                            : R.string.email_not_verified
+            );
+            binding.tvVerificationHint.setVisibility(
+                    emailVerified ? View.GONE : View.VISIBLE
+            );
+            binding.btnSendVerification.setVisibility(
+                    emailVerified ? View.GONE : View.VISIBLE
+            );
         }
     }
 
@@ -151,6 +171,9 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         setAccountSummaryVisible(false);
         binding.anonymousChooser.setVisibility(View.GONE);
         binding.credentialsForm.setVisibility(View.VISIBLE);
+        binding.btnForgotPassword.setVisibility(
+                mode == MODE_RESTORE ? View.VISIBLE : View.GONE
+        );
         clearFieldErrors();
 
         if (mode == MODE_BACKUP) {
@@ -182,6 +205,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         formMode = MODE_NONE;
         setAccountSummaryVisible(true);
         binding.credentialsForm.setVisibility(View.GONE);
+        binding.btnForgotPassword.setVisibility(View.GONE);
         binding.anonymousChooser.setVisibility(View.VISIBLE);
         binding.etEmail.setText("");
         binding.etPassword.setText("");
@@ -208,34 +232,120 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
 
         setBusy(true);
 
-        ActionCallback callback = new ActionCallback() {
+        if (formMode == MODE_BACKUP) {
+            actionListener.onBackupRequested(email, password, new BackupCallback() {
+                @Override
+                public void onSuccess(boolean verificationEmailSent) {
+                    if (!isAdded()) {
+                        return;
+                    }
+
+                    Toast.makeText(
+                            requireContext(),
+                            verificationEmailSent
+                                    ? R.string.backup_complete_verification_sent
+                                    : R.string.backup_complete_verification_failed,
+                            Toast.LENGTH_LONG
+                    ).show();
+                    dismiss();
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                    showError(exception);
+                }
+            });
+            return;
+        }
+
+        if (formMode == MODE_RESTORE) {
+            actionListener.onRestoreRequested(email, password, new ActionCallback() {
+                @Override
+                public void onSuccess() {
+                    if (!isAdded()) {
+                        return;
+                    }
+
+                    Toast.makeText(
+                            requireContext(),
+                            R.string.restore_complete,
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    dismiss();
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                    showError(exception);
+                }
+            });
+        }
+    }
+
+    private void requestPasswordReset() {
+        String email = binding.etEmail.getText() == null
+                ? ""
+                : binding.etEmail.getText().toString().trim();
+
+        binding.emailInputLayout.setError(null);
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.emailInputLayout.setError(getString(R.string.enter_valid_email));
+            return;
+        }
+
+        setBusy(true);
+        actionListener.onPasswordResetRequested(email, new ActionCallback() {
             @Override
             public void onSuccess() {
-                if (!isAdded()) {
+                showPasswordResetConfirmation();
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+                if (exception instanceof FirebaseAuthInvalidUserException) {
+                    showPasswordResetConfirmation();
+                } else {
+                    showError(exception);
+                }
+            }
+        });
+    }
+
+    private void showPasswordResetConfirmation() {
+        if (!isAdded() || binding == null) {
+            return;
+        }
+
+        setBusy(false);
+        Toast.makeText(
+                requireContext(),
+                R.string.password_reset_sent,
+                Toast.LENGTH_LONG
+        ).show();
+    }
+
+    private void requestVerificationEmail() {
+        setBusy(true);
+        actionListener.onVerificationEmailRequested(new ActionCallback() {
+            @Override
+            public void onSuccess() {
+                if (!isAdded() || binding == null) {
                     return;
                 }
 
+                setBusy(false);
                 Toast.makeText(
                         requireContext(),
-                        formMode == MODE_BACKUP
-                                ? R.string.backup_complete
-                                : R.string.restore_complete,
-                        Toast.LENGTH_SHORT
+                        R.string.verification_email_sent,
+                        Toast.LENGTH_LONG
                 ).show();
-                dismiss();
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
                 showError(exception);
             }
-        };
-
-        if (formMode == MODE_BACKUP) {
-            actionListener.onBackupRequested(email, password, callback);
-        } else if (formMode == MODE_RESTORE) {
-            actionListener.onRestoreRequested(email, password, callback);
-        }
+        });
     }
 
     private boolean validateCredentials(@NonNull String email, @NonNull String password) {
@@ -347,6 +457,8 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         binding.btnExistingAccount.setEnabled(!busy && !hasTasks);
         binding.btnCredentialsAction.setEnabled(!busy);
         binding.btnBackCredentials.setEnabled(!busy);
+        binding.btnForgotPassword.setEnabled(!busy);
+        binding.btnSendVerification.setEnabled(!busy);
         binding.btnSignOut.setEnabled(!busy);
         binding.btnDeleteData.setEnabled(!busy);
         binding.etEmail.setEnabled(!busy);
@@ -386,7 +498,8 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             return getString(R.string.network_error_message);
         }
 
-        if (exception instanceof FirebaseAuthInvalidCredentialsException) {
+        if (exception instanceof FirebaseAuthInvalidCredentialsException
+                || exception instanceof FirebaseAuthInvalidUserException) {
             return getString(R.string.invalid_credentials_message);
         }
 
@@ -427,16 +540,27 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
     public interface AccountActionListener {
         void onBackupRequested(@NonNull String email,
                                @NonNull String password,
-                               @NonNull ActionCallback callback);
+                               @NonNull BackupCallback callback);
 
         void onRestoreRequested(@NonNull String email,
                                 @NonNull String password,
                                 @NonNull ActionCallback callback);
 
+        void onPasswordResetRequested(@NonNull String email,
+                                      @NonNull ActionCallback callback);
+
+        void onVerificationEmailRequested(@NonNull ActionCallback callback);
+
         void onSignOutRequested();
 
         void onDeleteRequested(@Nullable String password,
                                @NonNull ActionCallback callback);
+    }
+
+    public interface BackupCallback {
+        void onSuccess(boolean verificationEmailSent);
+
+        void onError(@NonNull Exception exception);
     }
 
     public interface ActionCallback {
