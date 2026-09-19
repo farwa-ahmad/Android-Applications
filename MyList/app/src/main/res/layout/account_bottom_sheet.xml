@@ -3,6 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_task_sheet"
+    android:clipToOutline="true"
     android:fillViewport="true">
 
     <LinearLayout
@@ -10,24 +12,41 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="24dp"
-        android:paddingTop="20dp"
+        android:paddingTop="10dp"
         android:paddingEnd="24dp"
-        android:paddingBottom="28dp">
+        android:paddingBottom="24dp">
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_sheet_drag_handle" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/account"
+            android:textColor="@color/secondary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvAccountStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
             android:textColor="@color/secondary"
-            android:textSize="22sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvAccountDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="15sp" />
+            android:layout_marginTop="5dp"
+            android:textColor="@color/dark_gray"
+            android:textSize="14sp" />
 
         <LinearLayout
             android:id="@+id/anonymousChooser"
@@ -36,31 +55,63 @@
             android:layout_marginTop="22dp"
             android:orientation="vertical">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/protect_section_title"
+                android:textColor="@color/secondary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/protect_section_details"
+                android:textColor="@color/dark_gray"
+                android:textSize="13sp" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnProtectTasks"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
+                android:layout_marginTop="12dp"
                 android:text="@string/protect_my_tasks"
                 android:textAllCaps="false"
-                app:backgroundTint="@color/secondary" />
+                android:textColor="@color/task_action_button_text"
+                android:textSize="15sp"
+                app:backgroundTint="@color/task_action_button_bg"
+                app:cornerRadius="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/already_have_account_question"
+                android:textColor="@color/secondary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExistingAccount"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/already_have_account"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/sign_in"
                 android:textAllCaps="false"
+                android:textColor="@color/secondary"
+                app:cornerRadius="12dp"
                 app:strokeColor="@color/secondary" />
 
             <TextView
                 android:id="@+id/tvExistingAccountHint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:text="@string/restore_existing_hint"
-                android:textSize="13sp" />
+                android:textColor="@color/dark_gray"
+                android:textSize="12sp" />
 
         </LinearLayout>
 
@@ -68,7 +119,7 @@
             android:id="@+id/credentialsForm"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="14dp"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -76,15 +127,17 @@
                 android:id="@+id/btnBackCredentials"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
+                android:minWidth="0dp"
                 android:text="@string/back"
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                android:textColor="@color/secondary" />
 
             <TextView
                 android:id="@+id/tvFormTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:textColor="@color/secondary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -94,6 +147,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
+                android:textColor="@color/dark_gray"
                 android:textSize="13sp" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -101,7 +155,7 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="16dp"
                 android:hint="@string/email">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -136,10 +190,12 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCredentialsAction"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
                 android:layout_marginTop="14dp"
                 android:textAllCaps="false"
-                app:backgroundTint="@color/secondary" />
+                android:textColor="@color/task_action_button_text"
+                app:backgroundTint="@color/task_action_button_bg"
+                app:cornerRadius="12dp" />
 
         </LinearLayout>
 
@@ -155,9 +211,11 @@
                 android:id="@+id/btnSignOut"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:text="@string/sign_out"
                 android:textAllCaps="false"
+                android:textColor="@color/secondary"
+                app:cornerRadius="12dp"
                 app:strokeColor="@color/secondary" />
 
         </LinearLayout>
@@ -170,12 +228,19 @@
             android:visibility="gone"
             app:indicatorColor="@color/primary" />
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="28dp"
+            android:background="#ECE8EF" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
             android:text="@string/data_control_title"
             android:textColor="@color/secondary"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <TextView
@@ -183,6 +248,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="@string/data_control_details"
+            android:textColor="@color/dark_gray"
             android:textSize="13sp" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -205,14 +271,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDeleteData"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:minWidth="0dp"
             android:text="@string/delete_my_data"
             android:textAllCaps="false"
-            android:textColor="@color/delete_color"
-            app:strokeColor="@color/delete_color" />
+            android:textColor="@color/delete_color" />
 
     </LinearLayout>
 

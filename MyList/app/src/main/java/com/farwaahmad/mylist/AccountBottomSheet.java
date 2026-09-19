@@ -1,11 +1,15 @@
 package com.farwaahmad.mylist;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -13,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import com.farwaahmad.mylist.databinding.AccountBottomSheetBinding;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -78,14 +83,40 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         binding.btnDeleteData.setOnClickListener(v -> confirmDelete());
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        if (getDialog() == null) {
+            return;
+        }
+
+        View bottomSheet =
+                getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) {
+            bottomSheet.setBackgroundColor(Color.TRANSPARENT);
+            BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            behavior.setSkipCollapsed(true);
+        }
+
+        Window window = getDialog().getWindow();
+        if (window != null) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
     private void renderState(@NonNull String email) {
+        setAccountSummaryVisible(true);
+
         if (isAnonymous) {
-            binding.tvAccountStatus.setText(R.string.tasks_saved);
+            binding.tvAccountStatus.setText(R.string.guest_account);
             binding.tvAccountDetails.setText(R.string.temporary_account_details);
             binding.anonymousChooser.setVisibility(View.VISIBLE);
             binding.credentialsForm.setVisibility(View.GONE);
             binding.permanentSection.setVisibility(View.GONE);
             binding.deletePasswordInputLayout.setVisibility(View.GONE);
+            binding.btnDeleteData.setText(R.string.delete_my_data);
 
             binding.btnExistingAccount.setEnabled(!hasTasks);
             binding.tvExistingAccountHint.setText(
@@ -94,14 +125,15 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
                             : R.string.restore_existing_hint
             );
         } else {
-            binding.tvAccountStatus.setText(R.string.tasks_protected);
-            binding.tvAccountDetails.setText(
-                    getString(R.string.backed_up_account_details, email)
+            binding.tvAccountStatus.setText(
+                    email.isEmpty() ? getString(R.string.tasks_protected) : email
             );
+            binding.tvAccountDetails.setText(R.string.protected_account_details);
             binding.anonymousChooser.setVisibility(View.GONE);
             binding.credentialsForm.setVisibility(View.GONE);
             binding.permanentSection.setVisibility(View.VISIBLE);
-            binding.deletePasswordInputLayout.setVisibility(View.VISIBLE);
+            binding.deletePasswordInputLayout.setVisibility(View.GONE);
+            binding.btnDeleteData.setText(R.string.delete_my_account_and_data);
         }
     }
 
@@ -116,6 +148,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         }
 
         formMode = mode;
+        setAccountSummaryVisible(false);
         binding.anonymousChooser.setVisibility(View.GONE);
         binding.credentialsForm.setVisibility(View.VISIBLE);
         clearFieldErrors();
@@ -123,21 +156,42 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         if (mode == MODE_BACKUP) {
             binding.tvFormTitle.setText(R.string.protect_my_tasks);
             binding.tvFormDescription.setText(R.string.protect_form_description);
-            binding.btnCredentialsAction.setText(R.string.create_backup);
+            binding.btnCredentialsAction.setText(R.string.protect_my_tasks);
         } else {
-            binding.tvFormTitle.setText(R.string.sign_in_existing);
+            binding.tvFormTitle.setText(R.string.sign_in);
             binding.tvFormDescription.setText(R.string.restore_form_description);
             binding.btnCredentialsAction.setText(R.string.sign_in);
         }
+
+        binding.etEmail.requestFocus();
+        binding.etEmail.postDelayed(() -> {
+            if (!isAdded() || binding == null) {
+                return;
+            }
+            InputMethodManager inputMethodManager =
+                    (InputMethodManager) requireContext()
+                            .getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputMethodManager.showSoftInput(
+                    binding.etEmail,
+                    InputMethodManager.SHOW_IMPLICIT
+            );
+        }, 120);
     }
 
     private void showChooser() {
         formMode = MODE_NONE;
+        setAccountSummaryVisible(true);
         binding.credentialsForm.setVisibility(View.GONE);
         binding.anonymousChooser.setVisibility(View.VISIBLE);
         binding.etEmail.setText("");
         binding.etPassword.setText("");
         clearFieldErrors();
+    }
+
+    private void setAccountSummaryVisible(boolean visible) {
+        int visibility = visible ? View.VISIBLE : View.GONE;
+        binding.tvAccountStatus.setVisibility(visibility);
+        binding.tvAccountDetails.setVisibility(visibility);
     }
 
     private void submitCredentials() {
@@ -219,7 +273,26 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
 
     private void confirmDelete() {
         String password = null;
+
         if (!isAnonymous) {
+            if (binding.deletePasswordInputLayout.getVisibility() != View.VISIBLE) {
+                binding.deletePasswordInputLayout.setVisibility(View.VISIBLE);
+                binding.etDeletePassword.requestFocus();
+                binding.etDeletePassword.postDelayed(() -> {
+                    if (!isAdded() || binding == null) {
+                        return;
+                    }
+                    InputMethodManager inputMethodManager =
+                            (InputMethodManager) requireContext()
+                                    .getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputMethodManager.showSoftInput(
+                            binding.etDeletePassword,
+                            InputMethodManager.SHOW_IMPLICIT
+                    );
+                }, 120);
+                return;
+            }
+
             password = binding.etDeletePassword.getText() == null
                     ? ""
                     : binding.etDeletePassword.getText().toString();
@@ -235,7 +308,11 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
 
         String finalPassword = password;
         new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.delete_my_data)
+                .setTitle(
+                        isAnonymous
+                                ? R.string.delete_my_data
+                                : R.string.delete_my_account_and_data
+                )
                 .setMessage(R.string.delete_account_confirmation)
                 .setPositiveButton(R.string.delete_everything, (dialog, which) -> {
                     setBusy(true);
