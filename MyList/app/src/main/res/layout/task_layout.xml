@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="4dp"
-        android:paddingTop="4dp"
+        android:paddingTop="0dp"
         android:paddingEnd="12dp"
         android:paddingBottom="0dp">
 
@@ -34,10 +34,14 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:buttonTint="@null"
-                android:gravity="center"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_vertical"
                 android:minWidth="48dp"
                 android:minHeight="48dp"
-                android:padding="12dp"
+                android:paddingStart="12dp"
+                android:paddingTop="0dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="0dp"
                 app:buttonCompat="@drawable/task_complete_selector" />
 
             <TextView

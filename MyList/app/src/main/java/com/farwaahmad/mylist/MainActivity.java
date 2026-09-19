@@ -505,7 +505,7 @@ public class MainActivity extends AppCompatActivity
         pendingSwipeHintAfterSheetCloses = true;
         swipeHintRetryCount = 0;
         cancelSwipeHintRetry();
-        binding.rvTasks.post(this::showPendingSwipeHint);
+        binding.rvTasks.postDelayed(this::showPendingSwipeHint, 200L);
     }
 
     @Override

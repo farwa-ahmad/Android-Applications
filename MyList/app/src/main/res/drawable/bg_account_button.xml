@@ -1,0 +1,11 @@
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#1F3A2C51">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/account_button_surface" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/account_button_stroke" />
+        </shape>
+    </item>
+</ripple>
