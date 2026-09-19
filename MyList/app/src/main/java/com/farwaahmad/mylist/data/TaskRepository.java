@@ -82,7 +82,7 @@ public class TaskRepository {
 
     public void addTask(@NonNull String taskText,
                         @NonNull String dueDate,
-                        @NonNull OperationCallback callback) {
+                        @NonNull AddTaskCallback callback) {
         Map<String, Object> task = new HashMap<>();
         task.put("task", taskText);
         task.put("due", dueDate);
@@ -90,7 +90,8 @@ public class TaskRepository {
         task.put("time", FieldValue.serverTimestamp());
 
         tasks().add(task)
-                .addOnSuccessListener(documentReference -> callback.onSuccess())
+                .addOnSuccessListener(documentReference ->
+                        callback.onSuccess(documentReference.getId()))
                 .addOnFailureListener(callback::onError);
     }
 
@@ -153,6 +154,11 @@ public class TaskRepository {
 
     public interface OperationCallback {
         void onSuccess();
+        void onError(@NonNull Exception exception);
+    }
+
+    public interface AddTaskCallback {
+        void onSuccess(@NonNull String taskId);
         void onError(@NonNull Exception exception);
     }
 }

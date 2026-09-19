@@ -61,6 +61,43 @@
             android:textSize="13sp"
             tools:text="Due Today" />
 
+        <LinearLayout
+            android:id="@+id/swipeHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="42dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_swipe_hint"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="2dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/swipe_hint"
+                android:textColor="@color/secondary"
+                android:textSize="13sp" />
+
+            <ImageButton
+                android:id="@+id/btnDismissSwipeHint"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dismiss_swipe_hint"
+                android:padding="10dp"
+                android:src="@drawable/ic_close_24"
+                android:tint="@color/secondary" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

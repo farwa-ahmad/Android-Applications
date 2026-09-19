@@ -20,7 +20,6 @@ import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.data.TaskRepository;
 import com.farwaahmad.mylist.databinding.ActivityMainBinding;
 import com.farwaahmad.mylist.model.TaskModel;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 
@@ -44,6 +43,8 @@ public class MainActivity extends AppCompatActivity
     private boolean activityStarted;
     private boolean signInInProgress;
     private boolean initialStateReady;
+    private boolean pendingSwipeHintAfterSheetCloses;
+    private String pendingSwipeHintTaskId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -201,7 +202,7 @@ public class MainActivity extends AppCompatActivity
                 taskAdapter.submitTasks(tasks);
                 initialStateReady = true;
                 showContentState();
-                showSwipeHintOnce();
+                showPendingSwipeHint();
             }
 
             @Override
@@ -259,13 +260,28 @@ public class MainActivity extends AppCompatActivity
         binding.btnRetry.setVisibility(android.view.View.VISIBLE);
     }
 
-    private void showSwipeHintOnce() {
-        if (tasks.isEmpty() || !launchManager.shouldShowSwipeHint()) {
+    private void showPendingSwipeHint() {
+        if (!pendingSwipeHintAfterSheetCloses
+                || pendingSwipeHintTaskId == null
+                || !launchManager.shouldShowSwipeHint()) {
             return;
         }
 
-        Snackbar.make(binding.getRoot(), R.string.swipe_hint, Snackbar.LENGTH_LONG).show();
+        int position = taskAdapter.showSwipeHint(pendingSwipeHintTaskId);
+        if (position == RecyclerView.NO_POSITION) {
+            return;
+        }
+
+        String taskId = pendingSwipeHintTaskId;
+        pendingSwipeHintTaskId = null;
+        pendingSwipeHintAfterSheetCloses = false;
         launchManager.markSwipeHintShown();
+
+        binding.rvTasks.smoothScrollToPosition(position);
+        binding.rvTasks.postDelayed(
+                () -> taskAdapter.animateSwipeHint(binding.rvTasks, taskId),
+                350L
+        );
     }
 
     private void stopListeningForTasks() {
@@ -375,24 +391,46 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        TaskRepository.OperationCallback repositoryCallback =
-                new TaskRepository.OperationCallback() {
-                    @Override
-                    public void onSuccess() {
-                        callback.onSuccess();
-                    }
-
-                    @Override
-                    public void onError(@NonNull Exception exception) {
-                        callback.onError(exception);
-                    }
-                };
-
         if (isUpdate) {
-            taskRepository.updateTask(id, taskText, dueDate, repositoryCallback);
+            taskRepository.updateTask(id, taskText, dueDate,
+                    new TaskRepository.OperationCallback() {
+                        @Override
+                        public void onSuccess() {
+                            callback.onSuccess();
+                        }
+
+                        @Override
+                        public void onError(@NonNull Exception exception) {
+                            callback.onError(exception);
+                        }
+                    });
         } else {
-            taskRepository.addTask(taskText, dueDate, repositoryCallback);
+            boolean shouldTeachSwipe = tasks.isEmpty() && launchManager.shouldShowSwipeHint();
+            taskRepository.addTask(taskText, dueDate, new TaskRepository.AddTaskCallback() {
+                @Override
+                public void onSuccess(@NonNull String taskId) {
+                    if (shouldTeachSwipe) {
+                        pendingSwipeHintTaskId = taskId;
+                    }
+                    callback.onSuccess();
+                }
+
+                @Override
+                public void onError(@NonNull Exception exception) {
+                    callback.onError(exception);
+                }
+            });
         }
+    }
+
+    @Override
+    public void onTaskSheetDismissed(boolean taskCreated) {
+        if (!taskCreated || pendingSwipeHintTaskId == null) {
+            return;
+        }
+
+        pendingSwipeHintAfterSheetCloses = true;
+        binding.rvTasks.post(this::showPendingSwipeHint);
     }
 
     @Override

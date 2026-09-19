@@ -51,6 +51,7 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
         if (position == RecyclerView.NO_POSITION) {
             return;
         }
+        viewHolder.itemView.post(taskAdapter::hideSwipeHint);
 
         if (direction == ItemTouchHelper.LEFT) {
             new AlertDialog.Builder(taskAdapter.getContext())

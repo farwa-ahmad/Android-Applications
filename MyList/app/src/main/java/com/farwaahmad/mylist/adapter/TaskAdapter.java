@@ -2,6 +2,8 @@ package com.farwaahmad.mylist.adapter;
 
 import android.content.Context;
 import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,10 +31,14 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int TYPE_TASK = 1;
     private static final int MENU_EDIT = 1;
     private static final int MENU_DELETE = 2;
+    private static final long SWIPE_HINT_DURATION_MS = 6500L;
 
     private final Context context;
     private final TaskActionListener actionListener;
     private final List<Row> rows = new ArrayList<>();
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable hideSwipeHintRunnable = this::hideSwipeHint;
+    private String swipeHintTaskId;
 
     public TaskAdapter(@NonNull Context context,
                        @NonNull TaskActionListener actionListener) {
@@ -130,7 +136,14 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         boolean completed = task.getStatus() != 0;
         taskHolder.taskCheckBox.setText(task.getTask());
+        taskHolder.itemView.animate().cancel();
+        taskHolder.itemView.setTranslationX(0f);
         taskHolder.itemView.setAlpha(completed ? 0.62f : 1f);
+
+        boolean showSwipeHint = task.getId() != null
+                && task.getId().equals(swipeHintTaskId);
+        taskHolder.swipeHint.setVisibility(showSwipeHint ? View.VISIBLE : View.GONE);
+        taskHolder.dismissSwipeHint.setOnClickListener(v -> hideSwipeHint());
 
         int flags = taskHolder.taskCheckBox.getPaintFlags();
         if (completed) {
@@ -239,6 +252,78 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return context;
     }
 
+    public int showSwipeHint(@NonNull String taskId) {
+        int position = getPositionForTaskId(taskId);
+        if (position == RecyclerView.NO_POSITION) {
+            return position;
+        }
+
+        handler.removeCallbacks(hideSwipeHintRunnable);
+        swipeHintTaskId = taskId;
+        notifyItemChanged(position);
+        handler.postDelayed(hideSwipeHintRunnable, SWIPE_HINT_DURATION_MS);
+        return position;
+    }
+
+    public void hideSwipeHint() {
+        if (swipeHintTaskId == null) {
+            return;
+        }
+
+        int position = getPositionForTaskId(swipeHintTaskId);
+        swipeHintTaskId = null;
+        handler.removeCallbacks(hideSwipeHintRunnable);
+        if (position != RecyclerView.NO_POSITION) {
+            notifyItemChanged(position);
+        }
+    }
+
+    public void animateSwipeHint(@NonNull RecyclerView recyclerView,
+                                 @NonNull String taskId) {
+        int position = getPositionForTaskId(taskId);
+        if (position == RecyclerView.NO_POSITION) {
+            return;
+        }
+
+        RecyclerView.ViewHolder holder =
+                recyclerView.findViewHolderForAdapterPosition(position);
+        if (holder == null) {
+            recyclerView.scrollToPosition(position);
+            recyclerView.postDelayed(() -> animateSwipeHint(recyclerView, taskId), 180L);
+            return;
+        }
+
+        float distance = dpToPx(18);
+        View itemView = holder.itemView;
+        itemView.animate().cancel();
+        itemView.animate()
+                .translationX(distance)
+                .setDuration(150L)
+                .withEndAction(() -> itemView.animate()
+                        .translationX(-distance)
+                        .setDuration(260L)
+                        .withEndAction(() -> itemView.animate()
+                                .translationX(0f)
+                                .setDuration(150L)
+                                .start())
+                        .start())
+                .start();
+    }
+
+    private int getPositionForTaskId(@NonNull String taskId) {
+        for (int position = 0; position < rows.size(); position++) {
+            TaskModel task = rows.get(position).task;
+            if (task != null && taskId.equals(task.getId())) {
+                return position;
+            }
+        }
+        return RecyclerView.NO_POSITION;
+    }
+
+    private float dpToPx(int dp) {
+        return dp * context.getResources().getDisplayMetrics().density;
+    }
+
     @Override
     public int getItemCount() {
         return rows.size();
@@ -275,12 +360,16 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final TextView dueDateText;
         final CheckBox taskCheckBox;
         final ImageButton moreButton;
+        final View swipeHint;
+        final ImageButton dismissSwipeHint;
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             dueDateText = itemView.findViewById(R.id.tvDueDate);
             taskCheckBox = itemView.findViewById(R.id.cbTaskDone);
             moreButton = itemView.findViewById(R.id.btnMore);
+            swipeHint = itemView.findViewById(R.id.swipeHint);
+            dismissSwipeHint = itemView.findViewById(R.id.btnDismissSwipeHint);
         }
     }
 

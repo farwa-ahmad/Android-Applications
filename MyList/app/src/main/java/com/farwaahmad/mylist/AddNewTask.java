@@ -2,6 +2,7 @@ package com.farwaahmad.mylist;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -35,6 +36,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
     private String dueDate = "";
     private String id = "";
     private boolean isUpdate;
+    private boolean newTaskCreated;
     private TaskSaveListener taskSaveListener;
 
     public static AddNewTask newInstance() {
@@ -208,6 +210,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                             return;
                         }
 
+                        newTaskCreated = !isUpdate;
                         Toast.makeText(
                                 requireContext(),
                                 isUpdate ? R.string.task_updated : R.string.task_saved,
@@ -268,6 +271,14 @@ public class AddNewTask extends BottomSheetDialogFragment {
     }
 
     @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        if (taskSaveListener != null) {
+            taskSaveListener.onTaskSheetDismissed(newTaskCreated);
+        }
+        super.onDismiss(dialog);
+    }
+
+    @Override
     public void onDetach() {
         taskSaveListener = null;
         super.onDetach();
@@ -285,6 +296,8 @@ public class AddNewTask extends BottomSheetDialogFragment {
                                  @NonNull String dueDate,
                                  boolean isUpdate,
                                  @NonNull SaveCallback callback);
+
+        void onTaskSheetDismissed(boolean taskCreated);
     }
 
     public interface SaveCallback {
