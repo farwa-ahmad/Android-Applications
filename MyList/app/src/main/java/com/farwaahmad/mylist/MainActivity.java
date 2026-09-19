@@ -24,8 +24,11 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity
         implements TaskAdapter.TaskActionListener,
@@ -95,6 +98,7 @@ public class MainActivity extends AppCompatActivity
         binding.btnAccount.setOnClickListener(v -> openAccountSheet());
         binding.btnRetry.setOnClickListener(v -> retryLoading());
 
+        updateCurrentDate();
         consumeStartupState();
     }
 
@@ -116,6 +120,19 @@ public class MainActivity extends AppCompatActivity
         tasks.addAll(startupState.getTasks());
         taskAdapter.submitTasks(tasks);
         showContentState();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateCurrentDate();
+    }
+
+    private void updateCurrentDate() {
+        binding.tvCurrentDate.setText(
+                new SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
+                        .format(new Date())
+        );
     }
 
     @Override

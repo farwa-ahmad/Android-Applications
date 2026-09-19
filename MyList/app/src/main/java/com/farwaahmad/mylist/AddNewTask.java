@@ -84,6 +84,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
             binding.btnSave.setText(R.string.add_task);
         }
 
+        binding.btnToday.setCheckable(true);
+        binding.btnTomorrow.setCheckable(true);
+        binding.btnPickDate.setCheckable(true);
+
         updateDueDateUi();
         updateSaveButtonState();
 

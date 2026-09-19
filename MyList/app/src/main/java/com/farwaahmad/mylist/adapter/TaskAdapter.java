@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -23,9 +22,12 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.card.MaterialCardView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -38,8 +40,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int SECTION_NO_DUE_DATE = 3;
     private static final int SECTION_COMPLETED = 4;
 
-    private static final int MENU_EDIT = 1;
-    private static final int MENU_DELETE = 2;
     private static final long SWIPE_HINT_DURATION_MS = 6500L;
 
     private final Context context;
@@ -192,28 +192,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         taskHolder.taskCheckBox.setPaintFlags(flags);
 
-        String dueDate = task.getDue();
-        boolean hasDueDate = dueDate != null && !dueDate.trim().isEmpty();
-        taskHolder.dueDateText.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
-
-        if (hasDueDate) {
-            String displayDate = TaskDateUtils.formatForDisplay(context, dueDate);
-            if (!completed && TaskDateUtils.isOverdue(dueDate)) {
-                taskHolder.dueDateText.setText(
-                        context.getString(R.string.overdue_due_format, displayDate)
-                );
-                taskHolder.dueDateText.setTextColor(
-                        ContextCompat.getColor(context, R.color.delete_color)
-                );
-            } else {
-                taskHolder.dueDateText.setText(
-                        context.getString(R.string.due_label_format, displayDate)
-                );
-                taskHolder.dueDateText.setTextColor(
-                        ContextCompat.getColor(context, R.color.due_text)
-                );
-            }
-        }
+        bindDueDate(taskHolder, task, row.section, completed);
 
         taskHolder.taskCheckBox.setOnCheckedChangeListener(null);
         taskHolder.taskCheckBox.setChecked(completed);
@@ -222,12 +201,94 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         );
 
         taskHolder.itemView.setOnClickListener(v -> actionListener.onEditTask(task));
-        taskHolder.moreButton.setOnClickListener(v -> showOptions(taskHolder, task));
+    }
+
+    private void bindDueDate(@NonNull TaskViewHolder holder,
+                             @NonNull TaskModel task,
+                             int section,
+                             boolean completed) {
+        String dueDate = task.getDue();
+        int bucket = TaskDateUtils.bucketFor(dueDate);
+
+        boolean hideDate = dueDate == null
+                || dueDate.trim().isEmpty()
+                || bucket == TaskDateUtils.BUCKET_NONE
+                || bucket == TaskDateUtils.BUCKET_TODAY
+                || section == SECTION_TODAY
+                || section == SECTION_NO_DUE_DATE;
+
+        if (hideDate) {
+            holder.dueDateText.setVisibility(View.GONE);
+            return;
+        }
+
+        String displayDate = compactDate(dueDate);
+        if (displayDate.isEmpty()) {
+            holder.dueDateText.setVisibility(View.GONE);
+            return;
+        }
+
+        holder.dueDateText.setVisibility(View.VISIBLE);
+        holder.dueDateText.setText(displayDate);
+        holder.dueDateText.setTextColor(
+                ContextCompat.getColor(
+                        context,
+                        !completed && section == SECTION_OVERDUE
+                                ? R.color.delete_color
+                                : R.color.dark_gray
+                )
+        );
+    }
+
+    @NonNull
+    private String compactDate(@Nullable String dueDate) {
+        if (dueDate == null || dueDate.trim().isEmpty()) {
+            return "";
+        }
+
+        if (TaskDateUtils.bucketFor(dueDate) == TaskDateUtils.BUCKET_TODAY) {
+            return "";
+        }
+
+        Calendar due = TaskDateUtils.calendarForDue(dueDate);
+        if (due == null) {
+            return dueDate;
+        }
+
+        Calendar today = Calendar.getInstance();
+        Calendar tomorrow = (Calendar) today.clone();
+        tomorrow.add(Calendar.DAY_OF_MONTH, 1);
+
+        if (sameDay(due, tomorrow)) {
+            return context.getString(R.string.tomorrow);
+        }
+
+        return new SimpleDateFormat("d MMM", Locale.getDefault())
+                .format(due.getTime());
+    }
+
+    private boolean sameDay(@NonNull Calendar first, @NonNull Calendar second) {
+        return first.get(Calendar.ERA) == second.get(Calendar.ERA)
+                && first.get(Calendar.YEAR) == second.get(Calendar.YEAR)
+                && first.get(Calendar.DAY_OF_YEAR) == second.get(Calendar.DAY_OF_YEAR);
     }
 
     private void bindHeader(@NonNull HeaderViewHolder holder, @NonNull Row row) {
         holder.title.setText(row.header);
         holder.count.setText(String.valueOf(row.count));
+
+        boolean isOverdue = row.section == SECTION_OVERDUE;
+        int headerColor = ContextCompat.getColor(
+                context,
+                isOverdue ? R.color.delete_color : R.color.secondary
+        );
+        holder.title.setTextColor(headerColor);
+        holder.count.setTextColor(
+                ContextCompat.getColor(
+                        context,
+                        isOverdue ? R.color.delete_color : R.color.dark_gray
+                )
+        );
 
         boolean isCompleted = row.section == SECTION_COMPLETED;
         holder.toggle.setVisibility(isCompleted ? View.VISIBLE : View.GONE);
@@ -300,31 +361,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         super.onDetachedFromRecyclerView(recyclerView);
-    }
-
-    private void showOptions(@NonNull TaskViewHolder holder, @NonNull TaskModel task) {
-        PopupMenu popupMenu = new PopupMenu(context, holder.moreButton);
-        popupMenu.getMenu().add(0, MENU_EDIT, 0, R.string.edit_task);
-        popupMenu.getMenu().add(0, MENU_DELETE, 1, R.string.delete_task_title);
-        popupMenu.setOnMenuItemClickListener(item -> {
-            int position = holder.getBindingAdapterPosition();
-            if (position == RecyclerView.NO_POSITION) {
-                return false;
-            }
-
-            if (item.getItemId() == MENU_EDIT) {
-                actionListener.onEditTask(task);
-                return true;
-            }
-
-            if (item.getItemId() == MENU_DELETE) {
-                actionListener.onDeleteTaskRequested(task, position);
-                return true;
-            }
-
-            return false;
-        });
-        popupMenu.show();
     }
 
     public boolean isTaskPosition(int position) {
@@ -509,7 +545,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final MaterialCardView card;
         final TextView dueDateText;
         final CheckBox taskCheckBox;
-        final ImageButton moreButton;
         final View swipeHint;
         final ImageButton dismissSwipeHint;
         final View divider;
@@ -519,7 +554,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             card = (MaterialCardView) itemView;
             dueDateText = itemView.findViewById(R.id.tvDueDate);
             taskCheckBox = itemView.findViewById(R.id.cbTaskDone);
-            moreButton = itemView.findViewById(R.id.btnMore);
             swipeHint = itemView.findViewById(R.id.swipeHint);
             dismissSwipeHint = itemView.findViewById(R.id.btnDismissSwipeHint);
             divider = itemView.findViewById(R.id.taskDivider);
