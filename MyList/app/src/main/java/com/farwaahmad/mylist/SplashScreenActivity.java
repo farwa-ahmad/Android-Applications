@@ -1,7 +1,6 @@
 package com.farwaahmad.mylist;
 
 import android.content.Intent;
-import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,7 +12,6 @@ import androidx.core.splashscreen.SplashScreen;
 
 import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.data.TaskRepository;
-import com.farwaahmad.mylist.databinding.ActivitySplashScreenBinding;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -37,15 +35,8 @@ public class SplashScreenActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-        splashScreen.setOnExitAnimationListener(provider -> provider.remove());
         super.onCreate(savedInstanceState);
-
-        ActivitySplashScreenBinding binding = ActivitySplashScreenBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-        AnimationDrawable gradientAnimation = (AnimationDrawable) binding.rlSplashScreen.getBackground();
-        gradientAnimation.setEnterFadeDuration(450);
-        gradientAnimation.setExitFadeDuration(450);
-        gradientAnimation.start();
+        splashScreen.setKeepOnScreenCondition(() -> !navigated);
 
         authRepository = new AuthRepository();
         LaunchManager launchManager = new LaunchManager(this);
