@@ -96,7 +96,17 @@ public class AddNewTask extends BottomSheetDialogFragment {
             return false;
         });
 
-        binding.btnDueDate.setOnClickListener(v -> showDatePicker());
+        binding.btnToday.setOnClickListener(v -> {
+            dueDate = storageDateForOffset(0);
+            updateDueDateUi();
+        });
+
+        binding.btnTomorrow.setOnClickListener(v -> {
+            dueDate = storageDateForOffset(1);
+            updateDueDateUi();
+        });
+
+        binding.btnPickDate.setOnClickListener(v -> showDatePicker());
         binding.btnClearDueDate.setOnClickListener(v -> {
             dueDate = "";
             updateDueDateUi();
@@ -164,6 +174,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
 
+        datePickerDialog.setOnCancelListener(dialog -> updateDueDateUi());
         datePickerDialog.show();
     }
 
@@ -171,13 +182,30 @@ public class AddNewTask extends BottomSheetDialogFragment {
         boolean hasDueDate = !dueDate.isEmpty();
         binding.btnClearDueDate.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
 
-        if (!hasDueDate) {
-            binding.btnDueDate.setText(R.string.add_due_date);
-            return;
-        }
+        String today = storageDateForOffset(0);
+        String tomorrow = storageDateForOffset(1);
+        boolean isToday = today.equals(dueDate);
+        boolean isTomorrow = tomorrow.equals(dueDate);
+        boolean isCustomDate = hasDueDate && !isToday && !isTomorrow;
 
-        binding.btnDueDate.setText(
-                TaskDateUtils.formatForDisplay(requireContext(), dueDate)
+        binding.btnToday.setChecked(isToday);
+        binding.btnTomorrow.setChecked(isTomorrow);
+        binding.btnPickDate.setChecked(isCustomDate);
+        binding.btnPickDate.setText(
+                isCustomDate
+                        ? TaskDateUtils.formatForDisplay(requireContext(), dueDate)
+                        : getString(R.string.pick_date)
+        );
+    }
+
+    @NonNull
+    private String storageDateForOffset(int dayOffset) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, dayOffset);
+        return TaskDateUtils.toStorageDate(
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
         );
     }
 
@@ -238,7 +266,9 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     private void setSaving(boolean saving) {
         binding.btnSave.setEnabled(!saving);
-        binding.btnDueDate.setEnabled(!saving);
+        binding.btnToday.setEnabled(!saving);
+        binding.btnTomorrow.setEnabled(!saving);
+        binding.btnPickDate.setEnabled(!saving);
         binding.btnClearDueDate.setEnabled(!saving);
         binding.etTaskText.setEnabled(!saving);
         binding.btnSave.setText(

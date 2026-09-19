@@ -63,20 +63,49 @@
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDueDate"
+            android:id="@+id/btnToday"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="40dp"
+            android:layout_weight="1"
             android:minWidth="0dp"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:text="@string/add_due_date"
+            android:text="@string/today"
             android:textAllCaps="false"
             android:textColor="@color/secondary"
+            app:checkable="true"
             app:cornerRadius="20dp"
-            app:icon="@drawable/ic_baseline_calendar_today_24"
-            app:iconPadding="8dp"
-            app:iconTint="@color/primary"
+            app:strokeColor="@color/due_text"
+            app:strokeWidth="1dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnTomorrow"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:text="@string/tomorrow"
+            android:textAllCaps="false"
+            android:textColor="@color/secondary"
+            app:checkable="true"
+            app:cornerRadius="20dp"
+            app:strokeColor="@color/due_text"
+            app:strokeWidth="1dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickDate"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1.2"
+            android:minWidth="0dp"
+            android:text="@string/pick_date"
+            android:textAllCaps="false"
+            android:textColor="@color/secondary"
+            app:checkable="true"
+            app:cornerRadius="20dp"
             app:strokeColor="@color/due_text"
             app:strokeWidth="1dp" />
 
@@ -84,7 +113,7 @@
             android:id="@+id/btnClearDueDate"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginStart="4dp"
+            android:layout_marginStart="2dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/remove_due_date"
             android:padding="9dp"
