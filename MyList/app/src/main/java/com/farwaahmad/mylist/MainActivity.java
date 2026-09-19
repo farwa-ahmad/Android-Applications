@@ -406,7 +406,7 @@ public class MainActivity extends AppCompatActivity
                         }
                     });
         } else {
-            boolean shouldTeachSwipe = tasks.isEmpty() && launchManager.shouldShowSwipeHint();
+            boolean shouldTeachSwipe = launchManager.shouldShowSwipeHint();
             taskRepository.addTask(taskText, dueDate, new TaskRepository.AddTaskCallback() {
                 @Override
                 public void onSuccess(@NonNull String taskId) {
