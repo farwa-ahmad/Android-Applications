@@ -14,5 +14,6 @@
     <color name="delete_color">#C83E4D</color>
     <color name="due_text">#6B6472</color>
     <color name="dark_gray">#77727C</color>
+    <color name="task_divider">#18000000</color>
     <color name="transparent">#00000000</color>
 </resources>

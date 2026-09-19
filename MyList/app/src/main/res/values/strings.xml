@@ -20,6 +20,9 @@
     <string name="section_upcoming">Upcoming</string>
     <string name="section_no_due_date">No due date</string>
     <string name="section_completed">Completed</string>
+    <string name="expand_completed">Expand completed tasks</string>
+    <string name="collapse_completed">Collapse completed tasks</string>
+    <string name="completed_section_accessibility">Completed, %1$d tasks. %2$s</string>
 
     <string name="task_options">Task options</string>
     <string name="edit_task">Edit task</string>

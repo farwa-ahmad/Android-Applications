@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
@@ -20,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.farwaahmad.mylist.R;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
+import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,6 +31,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_TASK = 1;
+
+    private static final int SECTION_OVERDUE = 0;
+    private static final int SECTION_TODAY = 1;
+    private static final int SECTION_UPCOMING = 2;
+    private static final int SECTION_NO_DUE_DATE = 3;
+    private static final int SECTION_COMPLETED = 4;
+
     private static final int MENU_EDIT = 1;
     private static final int MENU_DELETE = 2;
     private static final long SWIPE_HINT_DURATION_MS = 6500L;
@@ -36,10 +45,12 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Context context;
     private final TaskActionListener actionListener;
     private final List<Row> rows = new ArrayList<>();
+    private final List<TaskModel> latestTasks = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable hideSwipeHintRunnable = this::hideSwipeHint;
 
     private String swipeHintTaskId;
+    private boolean completedCollapsed = true;
 
     public TaskAdapter(@NonNull Context context,
                        @NonNull TaskActionListener actionListener) {
@@ -48,6 +59,12 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public void submitTasks(@NonNull List<TaskModel> tasks) {
+        latestTasks.clear();
+        latestTasks.addAll(tasks);
+        rebuildRows();
+    }
+
+    private void rebuildRows() {
         rows.clear();
 
         List<TaskModel> overdue = new ArrayList<>();
@@ -56,7 +73,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         List<TaskModel> noDueDate = new ArrayList<>();
         List<TaskModel> completed = new ArrayList<>();
 
-        for (TaskModel task : tasks) {
+        for (TaskModel task : latestTasks) {
             if (task.getStatus() != 0) {
                 completed.add(task);
                 continue;
@@ -83,23 +100,41 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         today.sort(byDueDate);
         upcoming.sort(byDueDate);
 
-        addSection(R.string.section_overdue, overdue);
-        addSection(R.string.section_today, today);
-        addSection(R.string.section_upcoming, upcoming);
-        addSection(R.string.section_no_due_date, noDueDate);
-        addSection(R.string.section_completed, completed);
+        addSection(SECTION_OVERDUE, R.string.section_overdue, overdue, false);
+        addSection(SECTION_TODAY, R.string.section_today, today, false);
+        addSection(SECTION_UPCOMING, R.string.section_upcoming, upcoming, false);
+        addSection(SECTION_NO_DUE_DATE, R.string.section_no_due_date, noDueDate, false);
+        addSection(
+                SECTION_COMPLETED,
+                R.string.section_completed,
+                completed,
+                completedCollapsed
+        );
 
         notifyDataSetChanged();
     }
 
-    private void addSection(int titleRes, @NonNull List<TaskModel> tasks) {
+    private void addSection(int section,
+                            int titleRes,
+                            @NonNull List<TaskModel> tasks,
+                            boolean collapsed) {
         if (tasks.isEmpty()) {
             return;
         }
 
-        rows.add(Row.header(context.getString(titleRes)));
-        for (TaskModel task : tasks) {
-            rows.add(Row.task(task));
+        rows.add(Row.header(context.getString(titleRes), section, tasks.size()));
+
+        if (collapsed) {
+            return;
+        }
+
+        for (int index = 0; index < tasks.size(); index++) {
+            rows.add(Row.task(
+                    tasks.get(index),
+                    section,
+                    index == 0,
+                    index == tasks.size() - 1
+            ));
         }
     }
 
@@ -124,8 +159,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Row row = rows.get(position);
+
         if (holder instanceof HeaderViewHolder) {
-            ((HeaderViewHolder) holder).title.setText(row.header);
+            bindHeader((HeaderViewHolder) holder, row);
             return;
         }
 
@@ -134,6 +170,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (task == null) {
             return;
         }
+
+        bindGroupShape(taskHolder, row);
 
         boolean completed = task.getStatus() != 0;
         taskHolder.taskCheckBox.setText(task.getTask());
@@ -185,6 +223,62 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         taskHolder.itemView.setOnClickListener(v -> actionListener.onEditTask(task));
         taskHolder.moreButton.setOnClickListener(v -> showOptions(taskHolder, task));
+    }
+
+    private void bindHeader(@NonNull HeaderViewHolder holder, @NonNull Row row) {
+        holder.title.setText(row.header);
+        holder.count.setText(String.valueOf(row.count));
+
+        boolean isCompleted = row.section == SECTION_COMPLETED;
+        holder.toggle.setVisibility(isCompleted ? View.VISIBLE : View.GONE);
+        holder.itemView.setClickable(isCompleted);
+        holder.itemView.setFocusable(isCompleted);
+
+        if (!isCompleted) {
+            holder.itemView.setOnClickListener(null);
+            holder.itemView.setContentDescription(null);
+            return;
+        }
+
+        holder.toggle.setRotation(completedCollapsed ? -90f : 0f);
+        holder.toggle.setContentDescription(
+                context.getString(
+                        completedCollapsed
+                                ? R.string.expand_completed
+                                : R.string.collapse_completed
+                )
+        );
+        holder.itemView.setContentDescription(
+                context.getString(
+                        R.string.completed_section_accessibility,
+                        row.count,
+                        context.getString(
+                                completedCollapsed
+                                        ? R.string.expand_completed
+                                        : R.string.collapse_completed
+                        )
+                )
+        );
+        holder.itemView.setOnClickListener(v -> {
+            completedCollapsed = !completedCollapsed;
+            rebuildRows();
+        });
+    }
+
+    private void bindGroupShape(@NonNull TaskViewHolder holder, @NonNull Row row) {
+        float radius = dpToPx(14);
+
+        holder.card.setShapeAppearanceModel(
+                holder.card.getShapeAppearanceModel()
+                        .toBuilder()
+                        .setTopLeftCornerSize(row.firstInSection ? radius : 0f)
+                        .setTopRightCornerSize(row.firstInSection ? radius : 0f)
+                        .setBottomLeftCornerSize(row.lastInSection ? radius : 0f)
+                        .setBottomRightCornerSize(row.lastInSection ? radius : 0f)
+                        .build()
+        );
+
+        holder.divider.setVisibility(row.lastInSection ? View.GONE : View.VISIBLE);
     }
 
     @Override
@@ -356,46 +450,79 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private static class Row {
+        @Nullable
         final String header;
+        @Nullable
         final TaskModel task;
+        final int section;
+        final int count;
+        final boolean firstInSection;
+        final boolean lastInSection;
 
-        private Row(@Nullable String header, @Nullable TaskModel task) {
+        private Row(@Nullable String header,
+                    @Nullable TaskModel task,
+                    int section,
+                    int count,
+                    boolean firstInSection,
+                    boolean lastInSection) {
             this.header = header;
             this.task = task;
+            this.section = section;
+            this.count = count;
+            this.firstInSection = firstInSection;
+            this.lastInSection = lastInSection;
         }
 
-        static Row header(@NonNull String header) {
-            return new Row(header, null);
+        static Row header(@NonNull String header, int section, int count) {
+            return new Row(header, null, section, count, false, false);
         }
 
-        static Row task(@NonNull TaskModel task) {
-            return new Row(null, task);
+        static Row task(@NonNull TaskModel task,
+                        int section,
+                        boolean firstInSection,
+                        boolean lastInSection) {
+            return new Row(
+                    null,
+                    task,
+                    section,
+                    0,
+                    firstInSection,
+                    lastInSection
+            );
         }
     }
 
     private static class HeaderViewHolder extends RecyclerView.ViewHolder {
         final TextView title;
+        final TextView count;
+        final ImageView toggle;
 
         HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
-            title = (TextView) itemView;
+            title = itemView.findViewById(R.id.tvSectionTitle);
+            count = itemView.findViewById(R.id.tvSectionCount);
+            toggle = itemView.findViewById(R.id.ivSectionToggle);
         }
     }
 
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
+        final MaterialCardView card;
         final TextView dueDateText;
         final CheckBox taskCheckBox;
         final ImageButton moreButton;
         final View swipeHint;
         final ImageButton dismissSwipeHint;
+        final View divider;
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
+            card = (MaterialCardView) itemView;
             dueDateText = itemView.findViewById(R.id.tvDueDate);
             taskCheckBox = itemView.findViewById(R.id.cbTaskDone);
             moreButton = itemView.findViewById(R.id.btnMore);
             swipeHint = itemView.findViewById(R.id.swipeHint);
             dismissSwipeHint = itemView.findViewById(R.id.btnDismissSwipeHint);
+            divider = itemView.findViewById(R.id.taskDivider);
         }
     }
 
