@@ -6,6 +6,10 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.databinding.ActivitySliderScreenBinding;
@@ -26,11 +30,27 @@ public class SliderScreenActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
         launchManager = new LaunchManager(this);
         authRepository = new AuthRepository();
 
         binding = ActivitySliderScreenBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        WindowCompat.getInsetsController(getWindow(), binding.getRoot())
+                .setAppearanceLightStatusBars(true);
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rlSlider, (view, windowInsets) -> {
+            Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            view.setPadding(
+                    view.getPaddingLeft(),
+                    systemBars.top,
+                    view.getPaddingRight(),
+                    systemBars.bottom
+            );
+            return windowInsets;
+        });
 
         AnimationDrawable animationDrawable =
                 (AnimationDrawable) binding.rlSlider.getBackground();
