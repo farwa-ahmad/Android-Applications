@@ -12,7 +12,7 @@
     </style>
 
     <style name="Theme.MyList.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/primary</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/logo</item>
         <item name="postSplashScreenTheme">@style/Theme.MyList</item>
     </style>

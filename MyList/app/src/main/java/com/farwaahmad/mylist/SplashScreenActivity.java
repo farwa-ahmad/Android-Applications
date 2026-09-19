@@ -1,16 +1,17 @@
 package com.farwaahmad.mylist;
 
 import android.content.Intent;
-import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
 
 import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.data.TaskRepository;
-import com.farwaahmad.mylist.databinding.ActivitySplashScreenBinding;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -21,33 +22,32 @@ public class SplashScreenActivity extends AppCompatActivity {
 
     public static final String EXTRA_INITIAL_TASKS = "initialTasks";
     public static final String EXTRA_INITIAL_LOAD_FAILED = "initialLoadFailed";
+    private static final long MAX_SPLASH_DURATION_MS = 500L;
 
-    private ActivitySplashScreenBinding binding;
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private AuthRepository authRepository;
     private boolean navigated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        SplashScreen.installSplashScreen(this);
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        splashScreen.setKeepOnScreenCondition(() -> !navigated);
+        splashScreen.setOnExitAnimationListener(provider -> provider.remove());
         super.onCreate(savedInstanceState);
 
         LaunchManager launchManager = new LaunchManager(this);
         if (launchManager.isFirstTime()) {
+            navigated = true;
             startActivity(new Intent(this, SliderScreenActivity.class));
             finish();
             return;
         }
 
-        binding = ActivitySplashScreenBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        AnimationDrawable animationDrawable =
-                (AnimationDrawable) binding.rlSplashScreen.getBackground();
-        animationDrawable.setEnterFadeDuration(2000);
-        animationDrawable.setExitFadeDuration(4000);
-        animationDrawable.start();
-
         authRepository = new AuthRepository();
+        handler.postDelayed(
+                () -> launchMain(null, false),
+                MAX_SPLASH_DURATION_MS
+        );
         preloadTasks();
     }
 
@@ -86,16 +86,26 @@ public class SplashScreenActivity extends AppCompatActivity {
         });
     }
 
-    private void launchMain(@NonNull ArrayList<TaskModel> tasks, boolean loadFailed) {
+    private void launchMain(@Nullable ArrayList<TaskModel> tasks, boolean loadFailed) {
         if (navigated || isFinishing() || isDestroyed()) {
             return;
         }
 
         navigated = true;
+        handler.removeCallbacksAndMessages(null);
+
         Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra(EXTRA_INITIAL_TASKS, tasks);
+        if (tasks != null) {
+            intent.putExtra(EXTRA_INITIAL_TASKS, tasks);
+        }
         intent.putExtra(EXTRA_INITIAL_LOAD_FAILED, loadFailed);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacksAndMessages(null);
+        super.onDestroy();
     }
 }
