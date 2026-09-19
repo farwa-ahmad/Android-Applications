@@ -12,10 +12,10 @@
     </style>
 
     <style name="Widget.MyList.RoundedSquareFab" parent="Widget.MaterialComponents.FloatingActionButton">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyList.RoundedSquareFab</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay_MyList_RoundedSquareFab</item>
     </style>
 
-    <style name="ShapeAppearanceOverlay.MyList.RoundedSquareFab">
+    <style name="ShapeAppearanceOverlay_MyList_RoundedSquareFab">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">16dp</item>
     </style>
