@@ -20,16 +20,17 @@ import java.util.List;
 
 public class SplashScreenActivity extends AppCompatActivity {
 
-    public static final String EXTRA_INITIAL_TASKS = "initialTasks";
-    public static final String EXTRA_INITIAL_LOAD_FAILED = "initialLoadFailed";
-    private static final long MAX_SPLASH_DURATION_MS = 1000L;
+    private static final long STARTUP_TIMEOUT_MS = 5000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+
     private AuthRepository authRepository;
+
     @Nullable
     private ArrayList<TaskModel> cachedTasks;
+
     private boolean cacheReadFinished;
-    private boolean networkLoadFailed;
+    private boolean serverLoadFinished;
     private boolean navigated;
 
     @Override
@@ -39,40 +40,19 @@ public class SplashScreenActivity extends AppCompatActivity {
         splashScreen.setKeepOnScreenCondition(() -> !navigated);
 
         authRepository = new AuthRepository();
+
         LaunchManager launchManager = new LaunchManager(this);
         if (launchManager.isFirstTime()) {
-            warmUpAuthentication();
-            handler.postDelayed(this::launchOnboarding, MAX_SPLASH_DURATION_MS);
+            launchOnboarding();
             return;
         }
 
-        handler.postDelayed(
-                this::finishSplashAtDeadline,
-                MAX_SPLASH_DURATION_MS
-        );
+        handler.postDelayed(this::finishStartupAtDeadline, STARTUP_TIMEOUT_MS);
         preloadTasks();
     }
 
-    private void warmUpAuthentication() {
-        if (authRepository.getCurrentUser() != null) {
-            return;
-        }
-
-        authRepository.ensureUser(new AuthRepository.AuthCallback() {
-            @Override
-            public void onSuccess(@NonNull FirebaseUser user) {
-                // Authentication is ready by the time onboarding is completed.
-            }
-
-            @Override
-            public void onError(@NonNull Exception exception) {
-                // MainActivity will retry after onboarding if this warm-up fails.
-            }
-        });
-    }
-
     private void launchOnboarding() {
-        if (navigated || isFinishing() || isDestroyed()) {
+        if (!canNavigate()) {
             return;
         }
 
@@ -97,7 +77,8 @@ public class SplashScreenActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull Exception exception) {
-                launchMain(new ArrayList<>(), true);
+                StartupTaskStore.publishError();
+                launchMain();
             }
         });
     }
@@ -111,64 +92,78 @@ public class SplashScreenActivity extends AppCompatActivity {
                 cacheReadFinished = true;
                 cachedTasks = new ArrayList<>(tasks);
 
-                if (!cachedTasks.isEmpty() || networkLoadFailed) {
-                    launchMain(cachedTasks, false);
+                if (!tasks.isEmpty()) {
+                    StartupTaskStore.publishTasks(tasks);
+                    launchMain();
+                    return;
                 }
+
+                finishAfterServerFailureIfPossible();
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
                 cacheReadFinished = true;
-                if (networkLoadFailed) {
-                    launchMain(null, true);
-                }
+                cachedTasks = null;
+                finishAfterServerFailureIfPossible();
             }
         });
 
-        taskRepository.loadTasksOnce(new TaskRepository.TaskListener() {
+        taskRepository.loadServerTasksOnce(new TaskRepository.TaskListener() {
             @Override
             public void onTasksChanged(@NonNull List<TaskModel> tasks) {
-                launchMain(new ArrayList<>(tasks), false);
+                serverLoadFinished = true;
+                StartupTaskStore.publishTasks(tasks);
+                launchMain();
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
-                networkLoadFailed = true;
-                if (cacheReadFinished) {
-                    if (cachedTasks != null) {
-                        launchMain(cachedTasks, false);
-                    } else {
-                        launchMain(null, true);
-                    }
-                }
+                serverLoadFinished = true;
+                finishAfterServerFailureIfPossible();
             }
         });
     }
 
-    private void finishSplashAtDeadline() {
-        if (cachedTasks != null) {
-            launchMain(cachedTasks, false);
+    private void finishAfterServerFailureIfPossible() {
+        if (!serverLoadFinished || !cacheReadFinished || navigated) {
             return;
         }
 
-        launchMain(null, networkLoadFailed);
+        if (cachedTasks != null) {
+            StartupTaskStore.publishTasks(cachedTasks);
+        } else {
+            StartupTaskStore.publishError();
+        }
+        launchMain();
     }
 
-    private void launchMain(@Nullable ArrayList<TaskModel> tasks, boolean loadFailed) {
-        if (navigated || isFinishing() || isDestroyed()) {
+    private void finishStartupAtDeadline() {
+        if (navigated) {
+            return;
+        }
+
+        if (cachedTasks != null && !cachedTasks.isEmpty()) {
+            StartupTaskStore.publishTasks(cachedTasks);
+        } else {
+            StartupTaskStore.publishError();
+        }
+        launchMain();
+    }
+
+    private void launchMain() {
+        if (!canNavigate()) {
             return;
         }
 
         navigated = true;
         handler.removeCallbacksAndMessages(null);
-
-        Intent intent = new Intent(this, MainActivity.class);
-        if (tasks != null) {
-            intent.putExtra(EXTRA_INITIAL_TASKS, tasks);
-        }
-        intent.putExtra(EXTRA_INITIAL_LOAD_FAILED, loadFailed);
-        startActivity(intent);
+        startActivity(new Intent(this, MainActivity.class));
         finish();
+    }
+
+    private boolean canNavigate() {
+        return !navigated && !isFinishing() && !isDestroyed();
     }
 
     @Override

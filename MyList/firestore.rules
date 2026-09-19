@@ -2,9 +2,34 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validTask(data) {
+      return data.keys().hasOnly(['task', 'due', 'status', 'time'])
+             && data.keys().hasAll(['task', 'due', 'status', 'time'])
+             && data.task is string
+             && data.task.size() > 0
+             && data.task.size() <= 500
+             && data.due is string
+             && data.due.size() <= 10
+             && data.status is int
+             && (data.status == 0 || data.status == 1)
+             && data.time is timestamp;
+    }
+
     match /users/{userId}/tasks/{taskId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+                    && validTask(request.resource.data);
+
+      allow update: if isOwner(userId)
+                    && validTask(request.resource.data)
+                    && request.resource.data.time == resource.data.time;
+
+      allow delete: if isOwner(userId);
     }
   }
 }

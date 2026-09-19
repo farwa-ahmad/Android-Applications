@@ -40,10 +40,10 @@ public class TaskRepository {
                 .collection(TASKS_COLLECTION);
     }
 
-    public void loadTasksOnce(@NonNull TaskListener listener) {
+    public void loadServerTasksOnce(@NonNull TaskListener listener) {
         tasks()
                 .orderBy("time", Query.Direction.DESCENDING)
-                .get()
+                .get(Source.SERVER)
                 .addOnSuccessListener(snapshot ->
                         listener.onTasksChanged(mapTasks(snapshot)))
                 .addOnFailureListener(listener::onError);

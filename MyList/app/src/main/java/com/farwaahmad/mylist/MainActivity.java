@@ -24,7 +24,6 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,37 +95,27 @@ public class MainActivity extends AppCompatActivity
         binding.btnAccount.setOnClickListener(v -> openAccountSheet());
         binding.btnRetry.setOnClickListener(v -> retryLoading());
 
-        consumePreloadedState();
+        consumeStartupState();
     }
 
-    @SuppressWarnings("unchecked")
-    private void consumePreloadedState() {
-        boolean loadFailed = getIntent().getBooleanExtra(
-                SplashScreenActivity.EXTRA_INITIAL_LOAD_FAILED,
-                false
-        );
-
-        Serializable serializable = getIntent().getSerializableExtra(
-                SplashScreenActivity.EXTRA_INITIAL_TASKS
-        );
-
-        if (serializable instanceof ArrayList<?>) {
-            for (Object item : (ArrayList<?>) serializable) {
-                if (item instanceof TaskModel) {
-                    tasks.add((TaskModel) item);
-                }
-            }
-            taskAdapter.submitTasks(tasks);
-            initialStateReady = true;
-            showContentState();
-        } else {
+    private void consumeStartupState() {
+        StartupTaskStore.State startupState = StartupTaskStore.consume();
+        if (startupState == null) {
             showLoading(true);
+            return;
         }
 
-        if (loadFailed) {
-            initialStateReady = true;
+        initialStateReady = true;
+
+        if (startupState.isLoadFailed()) {
             showConnectionError();
+            return;
         }
+
+        tasks.clear();
+        tasks.addAll(startupState.getTasks());
+        taskAdapter.submitTasks(tasks);
+        showContentState();
     }
 
     @Override

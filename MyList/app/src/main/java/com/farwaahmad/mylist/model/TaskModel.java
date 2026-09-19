@@ -2,11 +2,7 @@ package com.farwaahmad.mylist.model;
 
 import com.google.firebase.firestore.Exclude;
 
-import java.io.Serializable;
-
-public class TaskModel implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class TaskModel {
 
     private String id;
     private String task;

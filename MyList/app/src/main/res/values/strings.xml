@@ -42,6 +42,7 @@
     <string name="onboarding_thanks">Thanks for downloading</string>
     <string name="onboarding_details">Manage and keep track of your tasks with ease.</string>
     <string name="next">Next</string>
+    <string name="getting_ready">Getting ready…</string>
     <string name="app_logo_description">My List logo</string>
 
     <string name="delete_task_title">Delete task</string>
@@ -64,7 +65,7 @@
     <string name="account">Account</string>
     <string name="guest_account">Guest account</string>
     <string name="tasks_saved">Your tasks are saved</string>
-    <string name="temporary_account_details">Your tasks are saved on this device.</string>
+    <string name="temporary_account_details">Your tasks are saved privately. Protect them with an email and password so you can recover them after reinstalling or changing phones.</string>
     <string name="protect_section_title">Protect your tasks</string>
     <string name="protect_section_details">Add an email and password so you can restore them if you reinstall the app or change phones.</string>
     <string name="tasks_protected">Your tasks are protected</string>

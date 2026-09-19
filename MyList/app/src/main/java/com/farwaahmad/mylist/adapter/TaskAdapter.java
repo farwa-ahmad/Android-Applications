@@ -38,6 +38,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final List<Row> rows = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable hideSwipeHintRunnable = this::hideSwipeHint;
+
     private String swipeHintTaskId;
 
     public TaskAdapter(@NonNull Context context,
@@ -186,6 +187,27 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         taskHolder.moreButton.setOnClickListener(v -> showOptions(taskHolder, task));
     }
 
+    @Override
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        holder.itemView.animate().cancel();
+        holder.itemView.setTranslationX(0f);
+        super.onViewRecycled(holder);
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        handler.removeCallbacksAndMessages(null);
+        swipeHintTaskId = null;
+
+        for (int index = 0; index < recyclerView.getChildCount(); index++) {
+            View child = recyclerView.getChildAt(index);
+            child.animate().cancel();
+            child.setTranslationX(0f);
+        }
+
+        super.onDetachedFromRecyclerView(recyclerView);
+    }
+
     private void showOptions(@NonNull TaskViewHolder holder, @NonNull TaskModel task) {
         PopupMenu popupMenu = new PopupMenu(context, holder.moreButton);
         popupMenu.getMenu().add(0, MENU_EDIT, 0, R.string.edit_task);
@@ -289,7 +311,11 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 recyclerView.findViewHolderForAdapterPosition(position);
         if (holder == null) {
             recyclerView.scrollToPosition(position);
-            recyclerView.postDelayed(() -> animateSwipeHint(recyclerView, taskId), 180L);
+            handler.postDelayed(() -> {
+                if (recyclerView.isAttachedToWindow()) {
+                    animateSwipeHint(recyclerView, taskId);
+                }
+            }, 180L);
             return;
         }
 
