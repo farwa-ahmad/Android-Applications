@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
@@ -43,6 +44,15 @@ public class TaskRepository {
         tasks()
                 .orderBy("time", Query.Direction.DESCENDING)
                 .get()
+                .addOnSuccessListener(snapshot ->
+                        listener.onTasksChanged(mapTasks(snapshot)))
+                .addOnFailureListener(listener::onError);
+    }
+
+    public void loadCachedTasksOnce(@NonNull TaskListener listener) {
+        tasks()
+                .orderBy("time", Query.Direction.DESCENDING)
+                .get(Source.CACHE)
                 .addOnSuccessListener(snapshot ->
                         listener.onTasksChanged(mapTasks(snapshot)))
                 .addOnFailureListener(listener::onError);

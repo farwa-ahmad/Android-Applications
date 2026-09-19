@@ -1,6 +1,7 @@
 package com.farwaahmad.mylist;
 
 import android.content.Intent;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,6 +13,7 @@ import androidx.core.splashscreen.SplashScreen;
 
 import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.data.TaskRepository;
+import com.farwaahmad.mylist.databinding.ActivitySplashScreenBinding;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -26,27 +28,56 @@ public class SplashScreenActivity extends AppCompatActivity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AuthRepository authRepository;
+    @Nullable
+    private ArrayList<TaskModel> cachedTasks;
+    private boolean cacheReadFinished;
+    private boolean networkLoadFailed;
     private boolean navigated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-        splashScreen.setKeepOnScreenCondition(() -> !navigated);
         splashScreen.setOnExitAnimationListener(provider -> provider.remove());
         super.onCreate(savedInstanceState);
 
+        ActivitySplashScreenBinding binding = ActivitySplashScreenBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        AnimationDrawable gradientAnimation = (AnimationDrawable) binding.rlSplashScreen.getBackground();
+        gradientAnimation.setEnterFadeDuration(450);
+        gradientAnimation.setExitFadeDuration(450);
+        gradientAnimation.start();
+
+        authRepository = new AuthRepository();
         LaunchManager launchManager = new LaunchManager(this);
         if (launchManager.isFirstTime()) {
+            warmUpAuthentication();
             handler.postDelayed(this::launchOnboarding, MAX_SPLASH_DURATION_MS);
             return;
         }
 
-        authRepository = new AuthRepository();
         handler.postDelayed(
-                () -> launchMain(null, false),
+                this::finishSplashAtDeadline,
                 MAX_SPLASH_DURATION_MS
         );
         preloadTasks();
+    }
+
+    private void warmUpAuthentication() {
+        if (authRepository.getCurrentUser() != null) {
+            return;
+        }
+
+        authRepository.ensureUser(new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(@NonNull FirebaseUser user) {
+                // Authentication is ready by the time onboarding is completed.
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+                // MainActivity will retry after onboarding if this warm-up fails.
+            }
+        });
     }
 
     private void launchOnboarding() {
@@ -82,6 +113,27 @@ public class SplashScreenActivity extends AppCompatActivity {
 
     private void loadTasks(@NonNull FirebaseUser user) {
         TaskRepository taskRepository = new TaskRepository(user.getUid());
+
+        taskRepository.loadCachedTasksOnce(new TaskRepository.TaskListener() {
+            @Override
+            public void onTasksChanged(@NonNull List<TaskModel> tasks) {
+                cacheReadFinished = true;
+                cachedTasks = new ArrayList<>(tasks);
+
+                if (!cachedTasks.isEmpty() || networkLoadFailed) {
+                    launchMain(cachedTasks, false);
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Exception exception) {
+                cacheReadFinished = true;
+                if (networkLoadFailed) {
+                    launchMain(null, true);
+                }
+            }
+        });
+
         taskRepository.loadTasksOnce(new TaskRepository.TaskListener() {
             @Override
             public void onTasksChanged(@NonNull List<TaskModel> tasks) {
@@ -90,9 +142,25 @@ public class SplashScreenActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull Exception exception) {
-                launchMain(new ArrayList<>(), true);
+                networkLoadFailed = true;
+                if (cacheReadFinished) {
+                    if (cachedTasks != null) {
+                        launchMain(cachedTasks, false);
+                    } else {
+                        launchMain(null, true);
+                    }
+                }
             }
         });
+    }
+
+    private void finishSplashAtDeadline() {
+        if (cachedTasks != null) {
+            launchMain(cachedTasks, false);
+            return;
+        }
+
+        launchMain(null, networkLoadFailed);
     }
 
     private void launchMain(@Nullable ArrayList<TaskModel> tasks, boolean loadFailed) {
