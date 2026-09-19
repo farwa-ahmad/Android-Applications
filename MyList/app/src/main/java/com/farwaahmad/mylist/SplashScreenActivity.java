@@ -22,7 +22,7 @@ public class SplashScreenActivity extends AppCompatActivity {
 
     public static final String EXTRA_INITIAL_TASKS = "initialTasks";
     public static final String EXTRA_INITIAL_LOAD_FAILED = "initialLoadFailed";
-    private static final long MAX_SPLASH_DURATION_MS = 500L;
+    private static final long MAX_SPLASH_DURATION_MS = 1000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private AuthRepository authRepository;
@@ -37,9 +37,7 @@ public class SplashScreenActivity extends AppCompatActivity {
 
         LaunchManager launchManager = new LaunchManager(this);
         if (launchManager.isFirstTime()) {
-            navigated = true;
-            startActivity(new Intent(this, SliderScreenActivity.class));
-            finish();
+            handler.postDelayed(this::launchOnboarding, MAX_SPLASH_DURATION_MS);
             return;
         }
 
@@ -49,6 +47,17 @@ public class SplashScreenActivity extends AppCompatActivity {
                 MAX_SPLASH_DURATION_MS
         );
         preloadTasks();
+    }
+
+    private void launchOnboarding() {
+        if (navigated || isFinishing() || isDestroyed()) {
+            return;
+        }
+
+        navigated = true;
+        handler.removeCallbacksAndMessages(null);
+        startActivity(new Intent(this, SliderScreenActivity.class));
+        finish();
     }
 
     private void preloadTasks() {
