@@ -138,7 +138,11 @@
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
                 android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
                 android:text="@string/back"
                 android:textAllCaps="false"
                 android:textColor="@color/secondary"
@@ -151,7 +155,7 @@
                 android:id="@+id/tvFormTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="0dp"
                 android:textColor="@color/secondary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -320,14 +324,16 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDeleteData"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_marginTop="8dp"
-            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
             android:text="@string/delete_my_data"
             android:textAllCaps="false"
-            android:textColor="@color/delete_color" />
+            android:textColor="@color/delete_color"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/delete_color"
+            app:strokeWidth="1dp" />
 
     </LinearLayout>
 
