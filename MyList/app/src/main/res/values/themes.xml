@@ -11,15 +11,6 @@
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
 
-    <style name="Widget.MyList.RoundedSquareFab" parent="Widget.MaterialComponents.FloatingActionButton">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay_MyList_RoundedSquareFab</item>
-    </style>
-
-    <style name="ShapeAppearanceOverlay_MyList_RoundedSquareFab">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">16dp</item>
-    </style>
-
     <style name="Theme.MyList.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_safe</item>
