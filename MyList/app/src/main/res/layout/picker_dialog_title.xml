@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingStart="24dp"
+    android:paddingTop="16dp"
     android:paddingEnd="24dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="12dp"
+    android:paddingBottom="6dp"
     android:text="@string/choose_date"
     android:textAppearance="@style/TextAppearance.MaterialComponents.Overline"
     android:textAllCaps="true" />

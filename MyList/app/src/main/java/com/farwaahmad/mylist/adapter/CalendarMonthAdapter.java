@@ -147,7 +147,13 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Cell cell = cells.get(position);
         if (holder instanceof WeekdayViewHolder) {
-            ((WeekdayViewHolder) holder).label.setText(cell.label);
+            WeekdayViewHolder weekdayHolder = (WeekdayViewHolder) holder;
+            weekdayHolder.label.setText(cell.label);
+            if (!showTaskCounts) {
+                ViewGroup.LayoutParams params = weekdayHolder.itemView.getLayoutParams();
+                params.height = dpToPx(weekdayHolder.itemView, 24);
+                weekdayHolder.itemView.setLayoutParams(params);
+            }
             return;
         }
 
@@ -159,6 +165,18 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         dayHolder.itemView.setVisibility(View.VISIBLE);
+
+        if (!showTaskCounts) {
+            ViewGroup.LayoutParams itemParams = dayHolder.itemView.getLayoutParams();
+            itemParams.height = dpToPx(dayHolder.itemView, 44);
+            dayHolder.itemView.setLayoutParams(itemParams);
+
+            ViewGroup.LayoutParams numberParams = dayHolder.dayNumber.getLayoutParams();
+            numberParams.width = dpToPx(dayHolder.dayNumber, 36);
+            numberParams.height = dpToPx(dayHolder.dayNumber, 36);
+            dayHolder.dayNumber.setLayoutParams(numberParams);
+        }
+
         dayHolder.dayNumber.setText(String.valueOf(cell.day));
         dayHolder.dayNumber.setTypeface(
                 null,
@@ -206,7 +224,9 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                 )
         );
 
-        if (!showTaskCounts || cell.taskCount == 0) {
+        if (!showTaskCounts) {
+            dayHolder.taskDots.setVisibility(View.GONE);
+        } else if (cell.taskCount == 0) {
             dayHolder.taskDots.setVisibility(View.INVISIBLE);
         } else {
             dayHolder.taskDots.setVisibility(View.VISIBLE);
@@ -248,6 +268,10 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public int getItemCount() {
         return cells.size();
+    }
+
+    private static int dpToPx(@NonNull View view, int dp) {
+        return Math.round(dp * view.getResources().getDisplayMetrics().density);
     }
 
     private static void normalize(@NonNull Calendar calendar) {
