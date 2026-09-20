@@ -799,8 +799,12 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void requestDelete(int position) {
         TaskModel task = getTaskAt(position);
         if (task != null) {
-            actionListener.onDeleteTask(task, position);
+            requestDelete(task, position);
         }
+    }
+
+    public void requestDelete(@NonNull TaskModel task, int swipedPosition) {
+        actionListener.onDeleteTask(task, swipedPosition);
     }
 
     public void requestEdit(int position) {
