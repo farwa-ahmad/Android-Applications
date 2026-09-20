@@ -1,5 +1,6 @@
 package com.farwaahmad.mylist.model;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 
 public class TaskModel {
@@ -9,6 +10,7 @@ public class TaskModel {
     private String due;
     private String dueTime;
     private int status;
+    private Timestamp time;
 
     public TaskModel() {
         // Required by Firestore.
@@ -54,5 +56,13 @@ public class TaskModel {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public Timestamp getTime() {
+        return time;
+    }
+
+    public void setTime(Timestamp time) {
+        this.time = time;
     }
 }
