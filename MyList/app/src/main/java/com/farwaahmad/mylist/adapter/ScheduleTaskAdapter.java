@@ -74,7 +74,7 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
         float alpha = completed ? 0.62f : 1f;
         holder.title.setAlpha(alpha);
         holder.time.setAlpha(alpha);
-        holder.checkBox.setAlpha(alpha);
+        holder.checkBox.setAlpha(1f);
 
         holder.checkBox.setOnCheckedChangeListener(null);
         holder.checkBox.setChecked(completed);
