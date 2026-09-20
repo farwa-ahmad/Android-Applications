@@ -505,11 +505,12 @@ public class MainActivity extends AppCompatActivity
 
         if (rawParams instanceof FrameLayout.LayoutParams) {
             FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) rawParams;
-            params.gravity = Gravity.BOTTOM | Gravity.START;
-            params.setMarginStart(dpToPx(20));
-            // Reserve the bottom-end corner for the floating + button.
-            params.setMarginEnd(dpToPx(96));
-            params.bottomMargin = Math.max(params.bottomMargin, dpToPx(20));
+            // Match the app's existing Toast-style status messages: compact and
+            // centered near the bottom, while keeping Undo tappable.
+            params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            params.setMarginStart(0);
+            params.setMarginEnd(0);
+            params.bottomMargin = Math.max(params.bottomMargin, dpToPx(64));
             snackbarView.setLayoutParams(params);
         } else {
             snackbarView.setLayoutParams(rawParams);
