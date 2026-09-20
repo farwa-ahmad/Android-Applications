@@ -1,9 +1,7 @@
 package com.farwaahmad.mylist;
 
-import android.app.AlertDialog;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
@@ -63,20 +61,10 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
         }
 
         if (direction == ItemTouchHelper.LEFT) {
-            // ItemTouchHelper leaves a fully swiped row translated until the adapter
-            // explicitly rebinds it. Restore immediately so the destructive action
-            // background never remains visible while the confirmation dialog is open.
-            taskAdapter.restoreItem(position);
-
-            // Keep the stable task captured at swipe time. Adapter positions can change
-            // while the dialog is open because Firestore updates the list in real time.
-            new AlertDialog.Builder(taskAdapter.getContext())
-                    .setTitle(R.string.delete_task_title)
-                    .setMessage(R.string.delete_task_message)
-                    .setPositiveButton(R.string.yes, (dialog, which) ->
-                            taskAdapter.requestDelete(task))
-                    .setNegativeButton(R.string.no, null)
-                    .show();
+            // The task identity was captured before the row can be reordered.
+            // Firestore's local snapshot removes the item immediately; Undo can
+            // recreate this exact document if the user changes their mind.
+            taskAdapter.requestDelete(task);
         } else {
             taskAdapter.requestEdit(position);
         }
