@@ -74,7 +74,7 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
                     .setTitle(R.string.delete_task_title)
                     .setMessage(R.string.delete_task_message)
                     .setPositiveButton(R.string.yes, (dialog, which) ->
-                            taskAdapter.requestDelete(task, position))
+                            taskAdapter.requestDelete(task))
                     .setNegativeButton(R.string.no, null)
                     .show();
         } else {
