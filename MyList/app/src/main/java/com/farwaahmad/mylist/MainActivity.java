@@ -406,19 +406,23 @@ public class MainActivity extends AppCompatActivity
             binding.tvSelectedDate.setText("");
         }
 
-        int count = scheduleTaskAdapter.getTaskCount();
+        int openCount = scheduleTaskAdapter.getOpenTaskCount();
         binding.tvSelectedTaskCount.setText(
-                getResources().getQuantityString(
-                        R.plurals.scheduled_task_count,
-                        count,
-                        count
-                )
+                openCount == 0
+                        ? getString(R.string.no_tasks)
+                        : getResources().getQuantityString(
+                                R.plurals.scheduled_task_count,
+                                openCount,
+                                openCount
+                        )
         );
-        binding.tvNoScheduledTasks.setVisibility(
-                count == 0 ? View.VISIBLE : View.GONE
+
+        int totalCount = scheduleTaskAdapter.getTaskCount();
+        binding.scheduleEmptyState.setVisibility(
+                totalCount == 0 ? View.VISIBLE : View.GONE
         );
         binding.rvScheduleTasks.setVisibility(
-                count == 0 ? View.GONE : View.VISIBLE
+                totalCount == 0 ? View.GONE : View.VISIBLE
         );
     }
 

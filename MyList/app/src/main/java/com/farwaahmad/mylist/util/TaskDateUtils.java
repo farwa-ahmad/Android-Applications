@@ -181,6 +181,17 @@ public final class TaskDateUtils {
         return bucketFor(dueDate, dueTime) == BUCKET_OVERDUE;
     }
 
+    public static boolean isPastDate(@Nullable String dueDate) {
+        Calendar due = calendarForDue(dueDate);
+        if (due == null) {
+            return false;
+        }
+
+        Calendar today = Calendar.getInstance();
+        normalize(today);
+        return due.before(today);
+    }
+
     @NonNull
     public static String formatForDisplay(@NonNull Context context, @Nullable String dueDate) {
         return formatDateForRow(context, dueDate);

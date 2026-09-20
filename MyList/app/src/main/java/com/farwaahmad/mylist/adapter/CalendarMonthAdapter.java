@@ -55,6 +55,10 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
 
         Map<String, Integer> taskCounts = new HashMap<>();
         for (TaskModel task : tasks) {
+            if (task.getStatus() != 0) {
+                continue;
+            }
+
             Calendar due = TaskDateUtils.calendarForDue(task.getDue());
             if (due == null
                     || due.get(Calendar.YEAR) != first.get(Calendar.YEAR)
@@ -93,7 +97,8 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                     day,
                     date,
                     taskCounts.getOrDefault(date, 0),
-                    isToday
+                    isToday,
+                    TaskDateUtils.isPastDate(date)
             ));
         }
 
@@ -168,18 +173,58 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         boolean selected = cell.storageDate.equals(selectedDate);
-        if (selected) {
+        boolean scheduleTodaySelected = showTaskCounts && selected && cell.today;
+
+        if (scheduleTodaySelected) {
+            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
+        } else if (selected) {
             dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_selected);
+        } else if (showTaskCounts && cell.today) {
+            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today_schedule);
         } else if (cell.today) {
             dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today);
         } else {
             dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
         }
         dayHolder.itemView.setSelected(selected);
-        dayHolder.dayNumber.setTextColor(androidx.core.content.ContextCompat.getColor(
-                holder.itemView.getContext(), selected ? R.color.white : R.color.secondary));
-        dayHolder.taskCount.setTextColor(androidx.core.content.ContextCompat.getColor(
-                holder.itemView.getContext(), selected ? R.color.white : R.color.due_text));
+
+        int dayTextColor;
+        if (scheduleTodaySelected) {
+            dayTextColor = R.color.secondary;
+        } else if (selected) {
+            dayTextColor = R.color.white;
+        } else if (showTaskCounts && cell.today) {
+            dayTextColor = R.color.primary;
+        } else if (showTaskCounts && cell.past) {
+            dayTextColor = R.color.task_circle_unchecked;
+        } else {
+            dayTextColor = R.color.secondary;
+        }
+        dayHolder.dayNumber.setTextColor(
+                androidx.core.content.ContextCompat.getColor(
+                        holder.itemView.getContext(),
+                        dayTextColor
+                )
+        );
+
+        int taskCountColor;
+        if (scheduleTodaySelected) {
+            taskCountColor = R.color.secondary;
+        } else if (selected) {
+            taskCountColor = R.color.white;
+        } else if (showTaskCounts && cell.past && cell.taskCount > 0) {
+            taskCountColor = R.color.delete_color;
+        } else if (showTaskCounts && cell.today && cell.taskCount > 0) {
+            taskCountColor = R.color.primary;
+        } else {
+            taskCountColor = R.color.due_text;
+        }
+        dayHolder.taskCount.setTextColor(
+                androidx.core.content.ContextCompat.getColor(
+                        holder.itemView.getContext(),
+                        taskCountColor
+                )
+        );
 
         Calendar date = TaskDateUtils.calendarForDue(cell.storageDate);
         if (date != null) {
@@ -220,6 +265,7 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         final String storageDate;
         final int taskCount;
         final boolean today;
+        final boolean past;
 
         private Cell(boolean weekday,
                      boolean blank,
@@ -227,7 +273,8 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                      int day,
                      String storageDate,
                      int taskCount,
-                     boolean today) {
+                     boolean today,
+                     boolean past) {
             this.weekday = weekday;
             this.blank = blank;
             this.label = label;
@@ -235,21 +282,23 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
             this.storageDate = storageDate;
             this.taskCount = taskCount;
             this.today = today;
+            this.past = past;
         }
 
         static Cell weekday(@NonNull String label) {
-            return new Cell(true, false, label, 0, "", 0, false);
+            return new Cell(true, false, label, 0, "", 0, false, false);
         }
 
         static Cell blank() {
-            return new Cell(false, true, "", 0, "", 0, false);
+            return new Cell(false, true, "", 0, "", 0, false, false);
         }
 
         static Cell day(int day,
                         @NonNull String storageDate,
                         int taskCount,
-                        boolean today) {
-            return new Cell(false, false, "", day, storageDate, taskCount, today);
+                        boolean today,
+                        boolean past) {
+            return new Cell(false, false, "", day, storageDate, taskCount, today, past);
         }
     }
 

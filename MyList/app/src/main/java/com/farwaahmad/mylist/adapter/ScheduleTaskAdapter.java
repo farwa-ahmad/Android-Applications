@@ -7,6 +7,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.farwaahmad.mylist.R;
@@ -59,10 +60,24 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         TaskModel task = tasks.get(position);
         boolean completed = task.getStatus() != 0;
+        boolean pastDate = TaskDateUtils.isPastDate(task.getDue());
 
         holder.title.setText(task.getTask() == null ? "" : task.getTask());
         holder.time.setText(
                 TaskDateUtils.formatTimeForDisplay(holder.itemView.getContext(), task.getDueTime())
+        );
+
+        holder.title.setTextColor(
+                ContextCompat.getColor(
+                        holder.itemView.getContext(),
+                        !completed && pastDate ? R.color.delete_color : R.color.secondary
+                )
+        );
+        holder.time.setTextColor(
+                ContextCompat.getColor(
+                        holder.itemView.getContext(),
+                        !completed && pastDate ? R.color.delete_color : R.color.dark_gray
+                )
         );
 
         holder.title.setPaintFlags(
@@ -92,6 +107,16 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
 
     public int getTaskCount() {
         return tasks.size();
+    }
+
+    public int getOpenTaskCount() {
+        int count = 0;
+        for (TaskModel task : tasks) {
+            if (task.getStatus() == 0) {
+                count++;
+            }
+        }
+        return count;
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
