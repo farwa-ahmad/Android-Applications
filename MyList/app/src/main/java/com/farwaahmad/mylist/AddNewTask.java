@@ -1,7 +1,5 @@
 package com.farwaahmad.mylist;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
@@ -22,8 +20,12 @@ import com.farwaahmad.mylist.databinding.AddTaskLayoutBinding;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 
 import java.util.Calendar;
+import java.util.TimeZone;
 
 public class AddNewTask extends BottomSheetDialogFragment {
 
@@ -169,23 +171,40 @@ public class AddNewTask extends BottomSheetDialogFragment {
             calendar = Calendar.getInstance();
         }
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                requireContext(),
-                (picker, selectedYear, selectedMonth, dayOfMonth) -> {
-                    dueDate = TaskDateUtils.toStorageDate(
-                            selectedYear,
-                            selectedMonth,
-                            dayOfMonth
-                    );
-                    updateDueDateUi();
-                },
+        Calendar selectionUtc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        selectionUtc.clear();
+        selectionUtc.set(
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
 
-        datePickerDialog.setOnCancelListener(dialog -> updateDueDateUi());
-        datePickerDialog.show();
+        MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText(R.string.pick_date)
+                .setInputMode(MaterialDatePicker.INPUT_MODE_CALENDAR)
+                .setSelection(selectionUtc.getTimeInMillis())
+                .build();
+
+        datePicker.addOnPositiveButtonClickListener(selection -> {
+            if (selection == null || binding == null) {
+                return;
+            }
+
+            Calendar selectedUtc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+            selectedUtc.setTimeInMillis(selection);
+            dueDate = TaskDateUtils.toStorageDate(
+                    selectedUtc.get(Calendar.YEAR),
+                    selectedUtc.get(Calendar.MONTH),
+                    selectedUtc.get(Calendar.DAY_OF_MONTH)
+            );
+            updateDueDateUi();
+        });
+        datePicker.addOnDismissListener(dialog -> {
+            if (binding != null) {
+                updateDueDateUi();
+            }
+        });
+        datePicker.show(getParentFragmentManager(), "MyListDatePicker");
     }
 
     private void showTimePicker() {
@@ -198,17 +217,29 @@ public class AddNewTask extends BottomSheetDialogFragment {
             time = Calendar.getInstance();
         }
 
-        TimePickerDialog timePickerDialog = new TimePickerDialog(
-                requireContext(),
-                (picker, hourOfDay, minute) -> {
-                    dueTime = TaskDateUtils.toStorageTime(hourOfDay, minute);
-                    updateDueTimeUi();
-                },
-                time.get(Calendar.HOUR_OF_DAY),
-                time.get(Calendar.MINUTE),
-                android.text.format.DateFormat.is24HourFormat(requireContext())
-        );
-        timePickerDialog.show();
+        int timeFormat = android.text.format.DateFormat.is24HourFormat(requireContext())
+                ? TimeFormat.CLOCK_24H
+                : TimeFormat.CLOCK_12H;
+
+        MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                .setTitleText(R.string.pick_time)
+                .setTimeFormat(timeFormat)
+                .setInputMode(MaterialTimePicker.INPUT_MODE_CLOCK)
+                .setHour(time.get(Calendar.HOUR_OF_DAY))
+                .setMinute(time.get(Calendar.MINUTE))
+                .build();
+
+        timePicker.addOnPositiveButtonClickListener(view -> {
+            if (binding == null) {
+                return;
+            }
+            dueTime = TaskDateUtils.toStorageTime(
+                    timePicker.getHour(),
+                    timePicker.getMinute()
+            );
+            updateDueTimeUi();
+        });
+        timePicker.show(getParentFragmentManager(), "MyListTimePicker");
     }
 
     private void updateDueDateUi() {
