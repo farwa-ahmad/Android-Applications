@@ -143,7 +143,9 @@ public class SplashScreenActivity extends AppCompatActivity {
             return;
         }
 
-        if (cachedTasks != null && !cachedTasks.isEmpty()) {
+        if (cacheReadFinished && cachedTasks != null) {
+            // An empty cache is still a successful cache read. Treat it as valid
+            // application state instead of surfacing a false connection error.
             StartupTaskStore.publishTasks(cachedTasks);
         } else {
             StartupTaskStore.publishError();
