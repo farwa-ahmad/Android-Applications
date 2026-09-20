@@ -196,7 +196,7 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
 
         int dayTextColor;
         if (scheduleTodaySelected) {
-            dayTextColor = R.color.secondary;
+            dayTextColor = R.color.white;
         } else if (selected) {
             dayTextColor = R.color.white;
         } else if (showTaskCounts && cell.today) {
