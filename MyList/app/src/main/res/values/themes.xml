@@ -16,7 +16,7 @@
         <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyList.DatePickerDialog</item>
     </style>
 
-    <style name="ShapeAppearanceOverlay.MyList.DatePickerDialog">
+    <style name="ShapeAppearanceOverlay.MyList.DatePickerDialog" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">20dp</item>
     </style>
