@@ -22,6 +22,7 @@ import com.farwaahmad.mylist.databinding.ActivityMainBinding;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -428,10 +429,13 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onDeleteTask(@NonNull TaskModel task) {
         if (taskRepository == null) {
+            taskAdapter.submitTasks(tasks);
             return;
         }
 
-        taskRepository.deleteTask(task.getId(), new TaskRepository.OperationCallback() {
+        TaskRepository repository = taskRepository;
+
+        repository.deleteTask(task.getId(), new TaskRepository.OperationCallback() {
             @Override
             public void onSuccess() {
             }
@@ -445,6 +449,29 @@ public class MainActivity extends AppCompatActivity
                 ).show();
             }
         });
+
+        Snackbar.make(
+                        binding.getRoot(),
+                        R.string.task_deleted,
+                        Snackbar.LENGTH_LONG
+                )
+                .setAction(R.string.undo, view ->
+                        repository.restoreTask(task, new TaskRepository.OperationCallback() {
+                            @Override
+                            public void onSuccess() {
+                            }
+
+                            @Override
+                            public void onError(@NonNull Exception exception) {
+                                Toast.makeText(
+                                        MainActivity.this,
+                                        R.string.restore_task_error,
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            }
+                        })
+                )
+                .show();
     }
 
     @Override
