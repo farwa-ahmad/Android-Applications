@@ -28,31 +28,13 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     public static final String TAG = "AddNewTask";
 
-    private static final String ARG_ID = "id";
-    private static final String ARG_TASK = "task";
-    private static final String ARG_DUE = "due";
-
     private AddTaskLayoutBinding binding;
     private String dueDate = "";
-    private String id = "";
-    private boolean isUpdate;
     private boolean newTaskCreated;
     private TaskSaveListener taskSaveListener;
 
     public static AddNewTask newInstance() {
         return new AddNewTask();
-    }
-
-    public static AddNewTask newInstance(@NonNull String id,
-                                         @NonNull String task,
-                                         @NonNull String dueDate) {
-        AddNewTask fragment = new AddNewTask();
-        Bundle arguments = new Bundle();
-        arguments.putString(ARG_ID, id);
-        arguments.putString(ARG_TASK, task);
-        arguments.putString(ARG_DUE, dueDate);
-        fragment.setArguments(arguments);
-        return fragment;
     }
 
     @Nullable
@@ -68,21 +50,8 @@ public class AddNewTask extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Bundle arguments = getArguments();
-        if (arguments != null) {
-            isUpdate = true;
-            id = arguments.getString(ARG_ID, "");
-            dueDate = TaskDateUtils.normalizeForStorage(
-                    arguments.getString(ARG_DUE, "")
-            );
-
-            binding.tvSheetTitle.setText(R.string.edit_task);
-            binding.etTaskText.setText(arguments.getString(ARG_TASK, ""));
-            binding.btnSave.setText(R.string.save_task);
-        } else {
-            binding.tvSheetTitle.setText(R.string.new_task);
-            binding.btnSave.setText(R.string.add_task);
-        }
+        binding.tvSheetTitle.setText(R.string.new_task);
+        binding.btnSave.setText(R.string.add_task);
 
         binding.btnToday.setCheckable(true);
         binding.btnTomorrow.setCheckable(true);
@@ -117,21 +86,19 @@ public class AddNewTask extends BottomSheetDialogFragment {
         });
         binding.btnSave.setOnClickListener(v -> saveTask());
 
-        if (!isUpdate) {
-            binding.etTaskText.requestFocus();
-            binding.etTaskText.postDelayed(() -> {
-                if (!isAdded() || binding == null) {
-                    return;
-                }
-                InputMethodManager inputMethodManager =
-                        (InputMethodManager) requireContext()
-                                .getSystemService(Context.INPUT_METHOD_SERVICE);
-                inputMethodManager.showSoftInput(
-                        binding.etTaskText,
-                        InputMethodManager.SHOW_IMPLICIT
-                );
-            }, 180);
-        }
+        binding.etTaskText.requestFocus();
+        binding.etTaskText.postDelayed(() -> {
+            if (!isAdded() || binding == null) {
+                return;
+            }
+            InputMethodManager inputMethodManager =
+                    (InputMethodManager) requireContext()
+                            .getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputMethodManager.showSoftInput(
+                    binding.etTaskText,
+                    InputMethodManager.SHOW_IMPLICIT
+            );
+        }, 180);
     }
 
     @Override
@@ -231,10 +198,8 @@ public class AddNewTask extends BottomSheetDialogFragment {
         setSaving(true);
 
         taskSaveListener.onTaskSaveRequested(
-                id,
                 taskText,
                 dueDate,
-                isUpdate,
                 new SaveCallback() {
                     @Override
                     public void onSuccess() {
@@ -242,10 +207,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
                             return;
                         }
 
-                        newTaskCreated = !isUpdate;
+                        newTaskCreated = true;
                         Toast.makeText(
                                 requireContext(),
-                                isUpdate ? R.string.task_updated : R.string.task_saved,
+                                R.string.task_saved,
                                 Toast.LENGTH_SHORT
                         ).show();
                         dismiss();
@@ -275,11 +240,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
         binding.btnPickDate.setEnabled(!saving);
         binding.btnClearDueDate.setEnabled(!saving);
         binding.etTaskText.setEnabled(!saving);
-        binding.btnSave.setText(
-                saving
-                        ? R.string.saving
-                        : (isUpdate ? R.string.save_task : R.string.add_task)
-        );
+        binding.btnSave.setText(saving ? R.string.saving : R.string.add_task);
     }
 
     private void updateSaveButtonState() {
@@ -325,10 +286,8 @@ public class AddNewTask extends BottomSheetDialogFragment {
     }
 
     public interface TaskSaveListener {
-        void onTaskSaveRequested(@NonNull String id,
-                                 @NonNull String taskText,
+        void onTaskSaveRequested(@NonNull String taskText,
                                  @NonNull String dueDate,
-                                 boolean isUpdate,
                                  @NonNull SaveCallback callback);
 
         void onTaskSheetDismissed(boolean taskCreated);

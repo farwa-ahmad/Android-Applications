@@ -387,12 +387,41 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onEditTask(@NonNull TaskModel task) {
-        AddNewTask.newInstance(
+    public void onTaskEditSaveRequested(@NonNull TaskModel task,
+                                        @NonNull String taskText,
+                                        @NonNull String dueDate,
+                                        @NonNull TaskAdapter.EditSaveCallback callback) {
+        if (taskRepository == null) {
+            callback.onError(new IllegalStateException(getString(R.string.auth_error)));
+            return;
+        }
+
+        taskRepository.updateTask(
                 task.getId(),
-                task.getTask() == null ? "" : task.getTask(),
-                task.getDue() == null ? "" : task.getDue()
-        ).show(getSupportFragmentManager(), AddNewTask.TAG);
+                taskText,
+                dueDate,
+                new TaskRepository.OperationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        callback.onSuccess();
+                        Toast.makeText(
+                                MainActivity.this,
+                                R.string.task_updated,
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception exception) {
+                        callback.onError(exception);
+                        Toast.makeText(
+                                MainActivity.this,
+                                R.string.save_task_error,
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                }
+        );
     }
 
     @Override
@@ -454,46 +483,29 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onTaskSaveRequested(@NonNull String id,
-                                    @NonNull String taskText,
+    public void onTaskSaveRequested(@NonNull String taskText,
                                     @NonNull String dueDate,
-                                    boolean isUpdate,
                                     @NonNull AddNewTask.SaveCallback callback) {
         if (taskRepository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
             return;
         }
 
-        if (isUpdate) {
-            taskRepository.updateTask(id, taskText, dueDate,
-                    new TaskRepository.OperationCallback() {
-                        @Override
-                        public void onSuccess() {
-                            callback.onSuccess();
-                        }
-
-                        @Override
-                        public void onError(@NonNull Exception exception) {
-                            callback.onError(exception);
-                        }
-                    });
-        } else {
-            boolean shouldTeachSwipe = launchManager.shouldShowSwipeHint();
-            taskRepository.addTask(taskText, dueDate, new TaskRepository.AddTaskCallback() {
-                @Override
-                public void onSuccess(@NonNull String taskId) {
-                    if (shouldTeachSwipe) {
-                        pendingSwipeHintTaskId = taskId;
-                    }
-                    callback.onSuccess();
+        boolean shouldTeachSwipe = launchManager.shouldShowSwipeHint();
+        taskRepository.addTask(taskText, dueDate, new TaskRepository.AddTaskCallback() {
+            @Override
+            public void onSuccess(@NonNull String taskId) {
+                if (shouldTeachSwipe) {
+                    pendingSwipeHintTaskId = taskId;
                 }
+                callback.onSuccess();
+            }
 
-                @Override
-                public void onError(@NonNull Exception exception) {
-                    callback.onError(exception);
-                }
-            });
-        }
+            @Override
+            public void onError(@NonNull Exception exception) {
+                callback.onError(exception);
+            }
+        });
     }
 
     @Override

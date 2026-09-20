@@ -35,6 +35,8 @@
     <string name="due_picker_format">Due: %1$s</string>
     <string name="save_task">Save task</string>
     <string name="saving">Saving…</string>
+    <string name="save_changes">Save task changes</string>
+    <string name="cancel_changes">Cancel task changes</string>
 
     <string name="loading_tasks">Getting your tasks ready…</string>
     <string name="empty_title">Nothing here yet</string>

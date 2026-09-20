@@ -1,13 +1,19 @@
 package com.farwaahmad.mylist.adapter;
 
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -20,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.farwaahmad.mylist.R;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
 import java.text.SimpleDateFormat;
@@ -50,6 +57,11 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Runnable hideSwipeHintRunnable = this::hideSwipeHint;
 
     private String swipeHintTaskId;
+    private String editingTaskId;
+    private String pendingFocusTaskId;
+    private String draftTaskText = "";
+    private String draftDueDate = "";
+    private boolean editSaveInProgress;
     private boolean completedCollapsed = true;
 
     public TaskAdapter(@NonNull Context context,
@@ -61,7 +73,21 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void submitTasks(@NonNull List<TaskModel> tasks) {
         latestTasks.clear();
         latestTasks.addAll(tasks);
+
+        if (editingTaskId != null && !containsTask(editingTaskId)) {
+            clearInlineEditState();
+        }
+
         rebuildRows();
+    }
+
+    private boolean containsTask(@NonNull String taskId) {
+        for (TaskModel task : latestTasks) {
+            if (taskId.equals(task.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void rebuildRows() {
@@ -174,33 +200,365 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         bindGroupShape(taskHolder, row);
 
         boolean completed = task.getStatus() != 0;
-        taskHolder.taskTitle.setText(task.getTask());
+        boolean editing = task.getId() != null && task.getId().equals(editingTaskId);
+
         taskHolder.itemView.animate().cancel();
         taskHolder.itemView.setTranslationX(0f);
-        taskHolder.itemView.setAlpha(completed ? 0.62f : 1f);
+        taskHolder.itemView.setAlpha(completed && !editing ? 0.62f : 1f);
 
-        boolean showSwipeHint = task.getId() != null
+        bindTaskTitle(taskHolder, task, completed, editing);
+
+        boolean showSwipeHint = !editing
+                && task.getId() != null
                 && task.getId().equals(swipeHintTaskId);
         taskHolder.swipeHint.setVisibility(showSwipeHint ? View.VISIBLE : View.GONE);
         taskHolder.dismissSwipeHint.setOnClickListener(v -> hideSwipeHint());
 
-        int flags = taskHolder.taskTitle.getPaintFlags();
-        if (completed) {
-            flags |= Paint.STRIKE_THRU_TEXT_FLAG;
+        if (editing) {
+            taskHolder.dueDateText.setVisibility(View.GONE);
         } else {
-            flags &= ~Paint.STRIKE_THRU_TEXT_FLAG;
+            bindDueDate(taskHolder, task, row.section, completed);
         }
-        taskHolder.taskTitle.setPaintFlags(flags);
-
-        bindDueDate(taskHolder, task, row.section, completed);
 
         taskHolder.taskCheckBox.setOnCheckedChangeListener(null);
         taskHolder.taskCheckBox.setChecked(completed);
+        taskHolder.taskCheckBox.setEnabled(!editing && !editSaveInProgress);
         taskHolder.taskCheckBox.setOnCheckedChangeListener((buttonView, isChecked) ->
                 actionListener.onTaskStatusChanged(task, isChecked)
         );
 
-        taskHolder.itemView.setOnClickListener(v -> actionListener.onEditTask(task));
+        bindInlineEditor(taskHolder, task, editing);
+
+        taskHolder.itemView.setOnClickListener(v -> {
+            if (!editing) {
+                startInlineEdit(taskHolder.getBindingAdapterPosition());
+            }
+        });
+    }
+
+    private void bindTaskTitle(@NonNull TaskViewHolder holder,
+                               @NonNull TaskModel task,
+                               boolean completed,
+                               boolean editing) {
+        if (holder.titleWatcher != null) {
+            holder.taskTitle.removeTextChangedListener(holder.titleWatcher);
+            holder.titleWatcher = null;
+        }
+
+        holder.taskTitle.setError(null);
+        holder.taskTitle.setText(editing
+                ? draftTaskText
+                : (task.getTask() == null ? "" : task.getTask()));
+
+        int flags = holder.taskTitle.getPaintFlags();
+        if (completed && !editing) {
+            flags |= Paint.STRIKE_THRU_TEXT_FLAG;
+        } else {
+            flags &= ~Paint.STRIKE_THRU_TEXT_FLAG;
+        }
+        holder.taskTitle.setPaintFlags(flags);
+
+        holder.taskTitle.setCursorVisible(editing);
+        holder.taskTitle.setFocusable(editing);
+        holder.taskTitle.setFocusableInTouchMode(editing);
+        holder.taskTitle.setClickable(editing);
+
+        if (!editing) {
+            holder.taskTitle.clearFocus();
+            return;
+        }
+
+        holder.titleWatcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (task.getId() != null && task.getId().equals(editingTaskId)) {
+                    draftTaskText = s == null ? "" : s.toString();
+                    updateInlineSaveButton(holder);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        };
+        holder.taskTitle.addTextChangedListener(holder.titleWatcher);
+
+        holder.taskTitle.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                saveInlineEdit(holder, task);
+                return true;
+            }
+            return false;
+        });
+
+        if (task.getId() != null && task.getId().equals(pendingFocusTaskId)) {
+            String taskId = task.getId();
+            pendingFocusTaskId = null;
+            holder.taskTitle.post(() -> {
+                if (!taskId.equals(editingTaskId)
+                        || holder.getBindingAdapterPosition() == RecyclerView.NO_POSITION) {
+                    return;
+                }
+                holder.taskTitle.requestFocus();
+                holder.taskTitle.setSelection(holder.taskTitle.length());
+                InputMethodManager inputMethodManager =
+                        (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.showSoftInput(
+                        holder.taskTitle,
+                        InputMethodManager.SHOW_IMPLICIT
+                );
+            });
+        }
+    }
+
+    private void bindInlineEditor(@NonNull TaskViewHolder holder,
+                                  @NonNull TaskModel task,
+                                  boolean editing) {
+        holder.inlineEditArea.setVisibility(editing ? View.VISIBLE : View.GONE);
+        if (!editing) {
+            return;
+        }
+
+        holder.editToday.setCheckable(true);
+        holder.editTomorrow.setCheckable(true);
+        holder.editPickDate.setCheckable(true);
+        bindDraftDateControls(holder);
+        setInlineControlsEnabled(holder, !editSaveInProgress);
+        updateInlineSaveButton(holder);
+
+        holder.editToday.setOnClickListener(v -> {
+            draftDueDate = storageDateForOffset(0);
+            bindDraftDateControls(holder);
+        });
+
+        holder.editTomorrow.setOnClickListener(v -> {
+            draftDueDate = storageDateForOffset(1);
+            bindDraftDateControls(holder);
+        });
+
+        holder.editPickDate.setOnClickListener(v -> showDatePicker(holder, task));
+
+        holder.editClearDate.setOnClickListener(v -> {
+            draftDueDate = "";
+            bindDraftDateControls(holder);
+        });
+
+        holder.editCancel.setOnClickListener(v -> cancelInlineEdit(holder, task));
+        holder.editSave.setOnClickListener(v -> saveInlineEdit(holder, task));
+    }
+
+    private void bindDraftDateControls(@NonNull TaskViewHolder holder) {
+        boolean hasDueDate = !draftDueDate.isEmpty();
+        String today = storageDateForOffset(0);
+        String tomorrow = storageDateForOffset(1);
+
+        boolean isToday = today.equals(draftDueDate);
+        boolean isTomorrow = tomorrow.equals(draftDueDate);
+        boolean isCustomDate = hasDueDate && !isToday && !isTomorrow;
+
+        holder.editToday.setChecked(isToday);
+        holder.editTomorrow.setChecked(isTomorrow);
+        holder.editPickDate.setChecked(isCustomDate);
+        holder.editPickDate.setText(
+                isCustomDate ? compactDate(draftDueDate) : context.getString(R.string.pick_date)
+        );
+        holder.editClearDate.setVisibility(hasDueDate ? View.VISIBLE : View.INVISIBLE);
+    }
+
+    private void showDatePicker(@NonNull TaskViewHolder holder,
+                                @NonNull TaskModel task) {
+        if (task.getId() == null || !task.getId().equals(editingTaskId)) {
+            return;
+        }
+
+        Calendar calendar = TaskDateUtils.calendarForDue(draftDueDate);
+        if (calendar == null) {
+            calendar = Calendar.getInstance();
+        }
+
+        DatePickerDialog dialog = new DatePickerDialog(
+                context,
+                (picker, year, month, dayOfMonth) -> {
+                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
+                        return;
+                    }
+                    draftDueDate = TaskDateUtils.toStorageDate(year, month, dayOfMonth);
+                    bindDraftDateControls(holder);
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+        dialog.show();
+    }
+
+    private void startInlineEdit(int position) {
+        if (!isTaskPosition(position) || editSaveInProgress) {
+            return;
+        }
+
+        TaskModel task = rows.get(position).task;
+        if (task == null || task.getId() == null) {
+            return;
+        }
+
+        int previousPosition = editingTaskId == null
+                ? RecyclerView.NO_POSITION
+                : getPositionForTaskId(editingTaskId);
+
+        editingTaskId = task.getId();
+        pendingFocusTaskId = task.getId();
+        draftTaskText = task.getTask() == null ? "" : task.getTask();
+        draftDueDate = TaskDateUtils.normalizeForStorage(
+                task.getDue() == null ? "" : task.getDue()
+        );
+        editSaveInProgress = false;
+        hideSwipeHint();
+
+        if (previousPosition != RecyclerView.NO_POSITION && previousPosition != position) {
+            notifyItemChanged(previousPosition);
+        }
+        notifyItemChanged(position);
+    }
+
+    private void cancelInlineEdit(@NonNull TaskViewHolder holder,
+                                  @NonNull TaskModel task) {
+        if (editSaveInProgress || task.getId() == null || !task.getId().equals(editingTaskId)) {
+            return;
+        }
+
+        String taskId = task.getId();
+        hideKeyboard(holder.taskTitle);
+        clearInlineEditState();
+
+        int position = getPositionForTaskId(taskId);
+        if (position != RecyclerView.NO_POSITION) {
+            notifyItemChanged(position);
+        }
+    }
+
+    private void saveInlineEdit(@NonNull TaskViewHolder holder,
+                                @NonNull TaskModel task) {
+        if (editSaveInProgress || task.getId() == null || !task.getId().equals(editingTaskId)) {
+            return;
+        }
+
+        String taskText = draftTaskText.trim();
+        if (taskText.isEmpty()) {
+            holder.taskTitle.setError(context.getString(R.string.no_task_entered));
+            holder.taskTitle.requestFocus();
+            return;
+        }
+
+        String originalText = task.getTask() == null ? "" : task.getTask().trim();
+        String originalDue = TaskDateUtils.normalizeForStorage(
+                task.getDue() == null ? "" : task.getDue()
+        );
+
+        if (taskText.equals(originalText) && draftDueDate.equals(originalDue)) {
+            cancelInlineEdit(holder, task);
+            return;
+        }
+
+        editSaveInProgress = true;
+        setInlineControlsEnabled(holder, false);
+        updateInlineSaveButton(holder);
+
+        String taskId = task.getId();
+        actionListener.onTaskEditSaveRequested(
+                task,
+                taskText,
+                draftDueDate,
+                new EditSaveCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (!taskId.equals(editingTaskId)) {
+                            return;
+                        }
+
+                        hideKeyboard(holder.taskTitle);
+                        clearInlineEditState();
+                        int position = getPositionForTaskId(taskId);
+                        if (position != RecyclerView.NO_POSITION) {
+                            notifyItemChanged(position);
+                        } else {
+                            notifyDataSetChanged();
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception exception) {
+                        if (!taskId.equals(editingTaskId)) {
+                            return;
+                        }
+
+                        editSaveInProgress = false;
+                        int position = getPositionForTaskId(taskId);
+                        if (position != RecyclerView.NO_POSITION) {
+                            notifyItemChanged(position);
+                        }
+                    }
+                }
+        );
+    }
+
+    private void setInlineControlsEnabled(@NonNull TaskViewHolder holder, boolean enabled) {
+        holder.taskTitle.setEnabled(enabled);
+        holder.editToday.setEnabled(enabled);
+        holder.editTomorrow.setEnabled(enabled);
+        holder.editPickDate.setEnabled(enabled);
+        holder.editClearDate.setEnabled(enabled);
+        holder.editCancel.setEnabled(enabled);
+        holder.editSave.setEnabled(enabled && !draftTaskText.trim().isEmpty());
+        holder.editSave.setText(
+                editSaveInProgress
+                        ? context.getString(R.string.saving)
+                        : context.getString(R.string.save)
+        );
+    }
+
+    private void updateInlineSaveButton(@NonNull TaskViewHolder holder) {
+        holder.editSave.setEnabled(
+                !editSaveInProgress && !draftTaskText.trim().isEmpty()
+        );
+        holder.editSave.setText(
+                editSaveInProgress
+                        ? context.getString(R.string.saving)
+                        : context.getString(R.string.save)
+        );
+        if (!draftTaskText.trim().isEmpty()) {
+            holder.taskTitle.setError(null);
+        }
+    }
+
+    private void clearInlineEditState() {
+        editingTaskId = null;
+        pendingFocusTaskId = null;
+        draftTaskText = "";
+        draftDueDate = "";
+        editSaveInProgress = false;
+    }
+
+    private void hideKeyboard(@NonNull View view) {
+        InputMethodManager inputMethodManager =
+                (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        view.clearFocus();
+    }
+
+    @NonNull
+    private String storageDateForOffset(int dayOffset) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, dayOffset);
+        return TaskDateUtils.toStorageDate(
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
     }
 
     private void bindDueDate(@NonNull TaskViewHolder holder,
@@ -346,6 +704,15 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
         holder.itemView.animate().cancel();
         holder.itemView.setTranslationX(0f);
+
+        if (holder instanceof TaskViewHolder) {
+            TaskViewHolder taskHolder = (TaskViewHolder) holder;
+            if (taskHolder.titleWatcher != null) {
+                taskHolder.taskTitle.removeTextChangedListener(taskHolder.titleWatcher);
+                taskHolder.titleWatcher = null;
+            }
+        }
+
         super.onViewRecycled(holder);
     }
 
@@ -385,11 +752,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public void requestEdit(int position) {
-        TaskModel task = getTaskAt(position);
-        if (task != null) {
-            actionListener.onEditTask(task);
-            notifyItemChanged(position);
-        }
+        startInlineEdit(position);
     }
 
     public void restoreItem(int position) {
@@ -544,31 +907,56 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
         final MaterialCardView card;
         final TextView dueDateText;
-        final TextView taskTitle;
+        final EditText taskTitle;
         final CheckBox taskCheckBox;
         final View swipeHint;
         final ImageButton dismissSwipeHint;
+        final View inlineEditArea;
+        final MaterialButton editToday;
+        final MaterialButton editTomorrow;
+        final MaterialButton editPickDate;
+        final ImageButton editClearDate;
+        final MaterialButton editCancel;
+        final MaterialButton editSave;
         final View divider;
+        @Nullable
+        TextWatcher titleWatcher;
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             card = (MaterialCardView) itemView;
             dueDateText = itemView.findViewById(R.id.tvDueDate);
-            taskTitle = itemView.findViewById(R.id.tvTaskTitle);
+            taskTitle = itemView.findViewById(R.id.etTaskTitle);
             taskCheckBox = itemView.findViewById(R.id.cbTaskDone);
             swipeHint = itemView.findViewById(R.id.swipeHint);
             dismissSwipeHint = itemView.findViewById(R.id.btnDismissSwipeHint);
+            inlineEditArea = itemView.findViewById(R.id.inlineEditArea);
+            editToday = itemView.findViewById(R.id.btnEditToday);
+            editTomorrow = itemView.findViewById(R.id.btnEditTomorrow);
+            editPickDate = itemView.findViewById(R.id.btnEditPickDate);
+            editClearDate = itemView.findViewById(R.id.btnEditClearDate);
+            editCancel = itemView.findViewById(R.id.btnEditCancel);
+            editSave = itemView.findViewById(R.id.btnEditSave);
             divider = itemView.findViewById(R.id.taskDivider);
         }
     }
 
     public interface TaskActionListener {
-        void onEditTask(@NonNull TaskModel task);
+        void onTaskEditSaveRequested(@NonNull TaskModel task,
+                                     @NonNull String taskText,
+                                     @NonNull String dueDate,
+                                     @NonNull EditSaveCallback callback);
 
         void onDeleteTaskRequested(@NonNull TaskModel task, int adapterPosition);
 
         void onDeleteTask(@NonNull TaskModel task, int adapterPosition);
 
         void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete);
+    }
+
+    public interface EditSaveCallback {
+        void onSuccess();
+
+        void onError(@NonNull Exception exception);
     }
 }
