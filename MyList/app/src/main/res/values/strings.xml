@@ -123,4 +123,14 @@
     <string name="delete_account_confirmation">Delete every task in this account and the account itself permanently? This cannot be undone.</string>
     <string name="delete_everything">Delete everything</string>
     <string name="account_deleted">Your tasks and account were deleted.</string>
+
+    <string name="view_list">List</string>
+    <string name="view_schedule">Schedule</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="no_tasks_scheduled">No tasks scheduled for this day.</string>
+    <plurals name="scheduled_task_count">
+        <item quantity="one">%1$d task</item>
+        <item quantity="other">%1$d tasks</item>
+    </plurals>
 </resources>
