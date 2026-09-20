@@ -14,20 +14,43 @@
 
         <TextView
             android:id="@+id/tvDayNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:gravity="center"
             android:textColor="@color/secondary"
             android:textSize="14sp" />
 
-        <TextView
-            android:id="@+id/tvTaskCount"
+        <LinearLayout
+            android:id="@+id/taskDots"
             android:layout_width="wrap_content"
-            android:layout_height="12dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="1dp"
             android:gravity="center"
-            android:textColor="@color/due_text"
-            android:textSize="9sp"
-            android:visibility="invisible" />
+            android:orientation="horizontal"
+            android:visibility="invisible">
+
+            <View
+                android:id="@+id/taskDotOne"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
+                android:layout_marginHorizontal="1dp"
+                android:background="@drawable/bg_calendar_task_dot" />
+
+            <View
+                android:id="@+id/taskDotTwo"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
+                android:layout_marginHorizontal="1dp"
+                android:background="@drawable/bg_calendar_task_dot" />
+
+            <View
+                android:id="@+id/taskDotThree"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
+                android:layout_marginHorizontal="1dp"
+                android:background="@drawable/bg_calendar_task_dot" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

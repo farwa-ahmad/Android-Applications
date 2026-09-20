@@ -1,5 +1,6 @@
 package com.farwaahmad.mylist.adapter;
 
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,6 +8,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.farwaahmad.mylist.R;
@@ -162,29 +165,32 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                 cell.today ? Typeface.BOLD : Typeface.NORMAL
         );
 
-        if (!showTaskCounts) {
-            dayHolder.taskCount.setVisibility(View.GONE);
-        } else if (cell.taskCount > 0) {
-            dayHolder.taskCount.setVisibility(View.VISIBLE);
-            dayHolder.taskCount.setText(cell.taskCount > 9 ? "9+" : String.valueOf(cell.taskCount));
-        } else {
-            dayHolder.taskCount.setVisibility(View.INVISIBLE);
-            dayHolder.taskCount.setText("");
-        }
-
         boolean selected = cell.storageDate.equals(selectedDate);
         boolean scheduleTodaySelected = showTaskCounts && selected && cell.today;
 
-        if (scheduleTodaySelected) {
-            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
-        } else if (selected) {
-            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_selected);
-        } else if (showTaskCounts && cell.today) {
-            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today_schedule);
-        } else if (cell.today) {
-            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today);
-        } else {
+        if (showTaskCounts) {
+            // Keep the selection circle around the date only; task dots sit below it.
             dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
+
+            if (scheduleTodaySelected) {
+                dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
+            } else if (selected) {
+                dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_selected_schedule);
+            } else if (cell.today) {
+                dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_schedule);
+            } else {
+                dayHolder.dayNumber.setBackgroundResource(android.R.color.transparent);
+            }
+        } else {
+            // The shared date picker keeps its existing styling.
+            dayHolder.dayNumber.setBackgroundResource(android.R.color.transparent);
+            if (selected) {
+                dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_selected);
+            } else if (cell.today) {
+                dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today);
+            } else {
+                dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
+            }
         }
         dayHolder.itemView.setSelected(selected);
 
@@ -201,30 +207,31 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
             dayTextColor = R.color.secondary;
         }
         dayHolder.dayNumber.setTextColor(
-                androidx.core.content.ContextCompat.getColor(
+                ContextCompat.getColor(
                         holder.itemView.getContext(),
                         dayTextColor
                 )
         );
 
-        int taskCountColor;
-        if (scheduleTodaySelected) {
-            taskCountColor = R.color.secondary;
-        } else if (selected) {
-            taskCountColor = R.color.white;
-        } else if (showTaskCounts && cell.past && cell.taskCount > 0) {
-            taskCountColor = R.color.delete_color;
-        } else if (showTaskCounts && cell.today && cell.taskCount > 0) {
-            taskCountColor = R.color.primary;
+        if (!showTaskCounts || cell.taskCount == 0) {
+            dayHolder.taskDots.setVisibility(View.INVISIBLE);
         } else {
-            taskCountColor = R.color.due_text;
+            dayHolder.taskDots.setVisibility(View.VISIBLE);
+            int dotCount = Math.min(cell.taskCount, 3);
+            dayHolder.dotOne.setVisibility(dotCount >= 1 ? View.VISIBLE : View.GONE);
+            dayHolder.dotTwo.setVisibility(dotCount >= 2 ? View.VISIBLE : View.GONE);
+            dayHolder.dotThree.setVisibility(dotCount >= 3 ? View.VISIBLE : View.GONE);
+
+            int dotColor = cell.past
+                    ? R.color.delete_color
+                    : (cell.today ? R.color.primary : R.color.due_text);
+            ColorStateList tint = ColorStateList.valueOf(
+                    ContextCompat.getColor(holder.itemView.getContext(), dotColor)
+            );
+            ViewCompat.setBackgroundTintList(dayHolder.dotOne, tint);
+            ViewCompat.setBackgroundTintList(dayHolder.dotTwo, tint);
+            ViewCompat.setBackgroundTintList(dayHolder.dotThree, tint);
         }
-        dayHolder.taskCount.setTextColor(
-                androidx.core.content.ContextCompat.getColor(
-                        holder.itemView.getContext(),
-                        taskCountColor
-                )
-        );
 
         Calendar date = TaskDateUtils.calendarForDue(cell.storageDate);
         if (date != null) {
@@ -313,12 +320,18 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     private static class DayViewHolder extends RecyclerView.ViewHolder {
         final TextView dayNumber;
-        final TextView taskCount;
+        final View taskDots;
+        final View dotOne;
+        final View dotTwo;
+        final View dotThree;
 
         DayViewHolder(@NonNull View itemView) {
             super(itemView);
             dayNumber = itemView.findViewById(R.id.tvDayNumber);
-            taskCount = itemView.findViewById(R.id.tvTaskCount);
+            taskDots = itemView.findViewById(R.id.taskDots);
+            dotOne = itemView.findViewById(R.id.taskDotOne);
+            dotTwo = itemView.findViewById(R.id.taskDotTwo);
+            dotThree = itemView.findViewById(R.id.taskDotThree);
         }
     }
 
