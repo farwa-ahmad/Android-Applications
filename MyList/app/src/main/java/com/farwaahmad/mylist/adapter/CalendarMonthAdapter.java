@@ -166,42 +166,37 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         );
 
         boolean selected = cell.storageDate.equals(selectedDate);
-        boolean scheduleTodaySelected = showTaskCounts && selected && cell.today;
+        boolean todaySelected = selected && cell.today;
 
-        if (showTaskCounts) {
-            // Keep the selection circle around the date only; task dots sit below it.
-            dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
+        // Both calendar surfaces use a true circle around the date number.
+        // The Schedule tab adds task dots; the date picker does not.
+        dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
 
-            if (scheduleTodaySelected) {
-                dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
-            } else if (selected) {
-                dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_selected_schedule);
-            } else if (cell.today) {
-                dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_schedule);
-            } else {
-                dayHolder.dayNumber.setBackgroundResource(android.R.color.transparent);
-            }
+        if (todaySelected) {
+            dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
+        } else if (selected) {
+            dayHolder.dayNumber.setBackgroundResource(
+                    showTaskCounts
+                            ? R.drawable.bg_calendar_day_selected_schedule
+                            : R.drawable.bg_calendar_day_selected
+            );
+        } else if (cell.today) {
+            dayHolder.dayNumber.setBackgroundResource(
+                    showTaskCounts
+                            ? R.drawable.bg_calendar_day_today_schedule
+                            : R.drawable.bg_calendar_day_today
+            );
         } else {
-            // The shared date picker keeps its existing styling.
             dayHolder.dayNumber.setBackgroundResource(android.R.color.transparent);
-            if (selected) {
-                dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_selected);
-            } else if (cell.today) {
-                dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today);
-            } else {
-                dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
-            }
         }
         dayHolder.itemView.setSelected(selected);
 
         int dayTextColor;
-        if (scheduleTodaySelected) {
+        if (selected) {
             dayTextColor = R.color.white;
-        } else if (selected) {
-            dayTextColor = R.color.white;
-        } else if (showTaskCounts && cell.today) {
+        } else if (cell.today) {
             dayTextColor = R.color.primary;
-        } else if (showTaskCounts && cell.past) {
+        } else if (cell.past) {
             dayTextColor = R.color.task_circle_unchecked;
         } else {
             dayTextColor = R.color.secondary;
