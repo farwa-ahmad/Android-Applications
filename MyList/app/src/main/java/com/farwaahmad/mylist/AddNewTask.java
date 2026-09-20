@@ -30,6 +30,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
     private AddTaskLayoutBinding binding;
     private String dueDate = "";
     private String dueTime = "";
+    private boolean datePickerOpen;
     private boolean newTaskCreated;
     private TaskSaveListener taskSaveListener;
 
@@ -51,7 +52,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         getParentFragmentManager().setFragmentResultListener("newTaskDate", getViewLifecycleOwner(), (key, result) -> {
-            dueDate = result.getString(TaskDatePicker.RESULT, "");
+            datePickerOpen = false;
+            if (result.getBoolean(TaskDatePicker.RESULT_CONFIRMED, false)) {
+                dueDate = result.getString(TaskDatePicker.RESULT, dueDate);
+            }
             updateDueDateUi();
         });
         getParentFragmentManager().setFragmentResultListener("newTaskTime", getViewLifecycleOwner(), (key, result) -> {
@@ -101,18 +105,9 @@ public class AddNewTask extends BottomSheetDialogFragment {
         });
 
         binding.btnPickDate.setOnClickListener(v -> {
-            String today = storageDateForOffset(0);
-            String tomorrow = storageDateForOffset(1);
-            boolean customDateSelected = !dueDate.isEmpty()
-                    && !today.equals(dueDate)
-                    && !tomorrow.equals(dueDate);
-
-            if (customDateSelected) {
-                dueDate = "";
-                dueTime = "";
+            if (showDatePicker()) {
+                datePickerOpen = true;
                 updateDueDateUi();
-            } else {
-                showDatePicker();
                 binding.btnPickDate.post(() -> {
                     if (binding != null) {
                         updateDueDateUi();
@@ -181,9 +176,13 @@ public class AddNewTask extends BottomSheetDialogFragment {
         binding.etTaskText.clearFocus();
     }
 
-    private void showDatePicker() {
+    private boolean showDatePicker() {
         hideTaskKeyboard();
-        TaskDatePicker.show(getParentFragmentManager(), "newTaskDate", dueDate);
+        return TaskDatePicker.show(
+                getParentFragmentManager(),
+                "newTaskDate",
+                dueDate
+        );
     }
 
     private void showTimePicker() {
@@ -211,7 +210,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
         binding.btnToday.setChecked(isToday);
         binding.btnTomorrow.setChecked(isTomorrow);
-        binding.btnPickDate.setChecked(isCustomDate);
+        binding.btnPickDate.setChecked(datePickerOpen || isCustomDate);
         binding.btnPickDate.setText(
                 isCustomDate
                         ? TaskDateUtils.formatForDisplay(requireContext(), dueDate)

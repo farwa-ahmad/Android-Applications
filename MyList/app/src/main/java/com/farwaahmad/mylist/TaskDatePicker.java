@@ -1,6 +1,7 @@
 package com.farwaahmad.mylist;
 
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -28,23 +29,27 @@ import java.util.Locale;
 /** A shared calendar surface for task creation and inline editing. */
 public class TaskDatePicker extends DialogFragment {
     public static final String RESULT = "date";
+    public static final String RESULT_CONFIRMED = "confirmed";
     private static final String TAG = "TaskDatePicker";
     private Calendar month;
     private String selected;
     private CalendarMonthAdapter adapter;
     private TextView title;
+    private boolean resultDelivered;
 
-    public static void show(FragmentManager manager, String requestKey, String initialDate) {
-        if (manager.isStateSaved() || manager.findFragmentByTag(TAG) != null) return;
+    public static boolean show(FragmentManager manager, String requestKey, String initialDate) {
+        if (manager.isStateSaved() || manager.findFragmentByTag(TAG) != null) return false;
         TaskDatePicker picker = new TaskDatePicker();
         Bundle args = new Bundle();
         args.putString("key", requestKey);
         args.putString(RESULT, initialDate);
         picker.setArguments(args);
         picker.show(manager, TAG);
+        return true;
     }
 
     @NonNull @Override public Dialog onCreateDialog(@Nullable Bundle state) {
+        resultDelivered = state != null && state.getBoolean("resultDelivered", false);
         selected = state == null ? requireArguments().getString(RESULT, "") : state.getString(RESULT, "");
         month = TaskDateUtils.calendarForDue(selected);
         if (month == null) month = Calendar.getInstance();
@@ -68,8 +73,14 @@ public class TaskDatePicker extends DialogFragment {
                 .setView(view)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.set_date, (dialog, which) -> {
-                    Bundle result = new Bundle(); result.putString(RESULT, selected);
-                    getParentFragmentManager().setFragmentResult(requireArguments().getString("key"), result);
+                    Bundle result = new Bundle();
+                    result.putBoolean(RESULT_CONFIRMED, true);
+                    result.putString(RESULT, selected);
+                    resultDelivered = true;
+                    getParentFragmentManager().setFragmentResult(
+                            requireArguments().getString("key"),
+                            result
+                    );
                 }).create();
     }
 
@@ -112,8 +123,23 @@ public class TaskDatePicker extends DialogFragment {
         }
     }
 
+    @Override public void onDismiss(@NonNull DialogInterface dialog) {
+        if (!resultDelivered && getArguments() != null) {
+            Bundle result = new Bundle();
+            result.putBoolean(RESULT_CONFIRMED, false);
+            resultDelivered = true;
+            getParentFragmentManager().setFragmentResult(
+                    requireArguments().getString("key"),
+                    result
+            );
+        }
+        super.onDismiss(dialog);
+    }
+
     @Override public void onSaveInstanceState(@NonNull Bundle state) {
         super.onSaveInstanceState(state);
-        state.putString(RESULT, selected); state.putLong("month", month.getTimeInMillis());
+        state.putString(RESULT, selected);
+        state.putLong("month", month.getTimeInMillis());
+        state.putBoolean("resultDelivered", resultDelivered);
     }
 }

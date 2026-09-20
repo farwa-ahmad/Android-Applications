@@ -62,6 +62,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private String draftTaskText = "";
     private String draftDueDate = "";
     private String draftDueTime = "";
+    private boolean editDatePickerOpen;
     private boolean editSaveInProgress;
     private boolean completedCollapsed = true;
 
@@ -363,18 +364,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         });
 
         holder.editPickDate.setOnClickListener(v -> {
-            String today = storageDateForOffset(0);
-            String tomorrow = storageDateForOffset(1);
-            boolean customDateSelected = !draftDueDate.isEmpty()
-                    && !today.equals(draftDueDate)
-                    && !tomorrow.equals(draftDueDate);
-
-            if (customDateSelected) {
-                draftDueDate = "";
-                draftDueTime = "";
+            if (showDatePicker(holder, task)) {
+                editDatePickerOpen = true;
                 bindDraftDateControls(holder);
-            } else {
-                showDatePicker(holder, task);
                 holder.editPickDate.post(() -> {
                     if (task.getId() != null
                             && task.getId().equals(editingTaskId)
@@ -413,7 +405,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         holder.editToday.setChecked(isToday);
         holder.editTomorrow.setChecked(isTomorrow);
-        holder.editPickDate.setChecked(isCustomDate);
+        holder.editPickDate.setChecked(editDatePickerOpen || isCustomDate);
         holder.editPickDate.setText(
                 isCustomDate
                         ? TaskDateUtils.formatDateForRow(context, draftDueDate)
@@ -440,21 +432,38 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         );
     }
 
-    private void showDatePicker(@NonNull TaskViewHolder holder,
-                                @NonNull TaskModel task) {
+    private boolean showDatePicker(@NonNull TaskViewHolder holder,
+                                   @NonNull TaskModel task) {
         if (task.getId() == null || !task.getId().equals(editingTaskId)) {
-            return;
+            return false;
         }
 
         FragmentActivity activity = (FragmentActivity) context;
-        activity.getSupportFragmentManager().setFragmentResultListener("editTaskDate", activity, (key, result) -> {
-            if (!task.getId().equals(editingTaskId)) return;
-            draftDueDate = result.getString(TaskDatePicker.RESULT, "");
-            int position = getPositionForTaskId(task.getId());
-            if (position != RecyclerView.NO_POSITION) notifyItemChanged(position);
-        });
+        activity.getSupportFragmentManager().setFragmentResultListener(
+                "editTaskDate",
+                activity,
+                (key, result) -> {
+                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
+                        return;
+                    }
+
+                    editDatePickerOpen = false;
+                    if (result.getBoolean(TaskDatePicker.RESULT_CONFIRMED, false)) {
+                        draftDueDate = result.getString(TaskDatePicker.RESULT, draftDueDate);
+                    }
+
+                    int position = getPositionForTaskId(task.getId());
+                    if (position != RecyclerView.NO_POSITION) {
+                        notifyItemChanged(position);
+                    }
+                }
+        );
         hideKeyboard(holder.taskTitle);
-        TaskDatePicker.show(activity.getSupportFragmentManager(), "editTaskDate", draftDueDate);
+        return TaskDatePicker.show(
+                activity.getSupportFragmentManager(),
+                "editTaskDate",
+                draftDueDate
+        );
     }
 
     private void showTimePicker(@NonNull TaskViewHolder holder,
@@ -514,6 +523,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         draftDueTime = draftDueDate.isEmpty()
                 ? ""
                 : TaskDateUtils.normalizeTimeForStorage(task.getDueTime());
+        editDatePickerOpen = false;
         editSaveInProgress = false;
         hideSwipeHint();
 
@@ -645,6 +655,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         draftTaskText = "";
         draftDueDate = "";
         draftDueTime = "";
+        editDatePickerOpen = false;
         editSaveInProgress = false;
     }
 
