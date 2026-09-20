@@ -167,7 +167,15 @@ public class AddNewTask extends BottomSheetDialogFragment {
         }
     }
 
+    private void hideTaskKeyboard() {
+        if (binding == null) return;
+        InputMethodManager keyboard = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        keyboard.hideSoftInputFromWindow(binding.etTaskText.getWindowToken(), 0);
+        binding.etTaskText.clearFocus();
+    }
+
     private void showDatePicker() {
+        hideTaskKeyboard();
         TaskDatePicker.show(getParentFragmentManager(), "newTaskDate", dueDate);
     }
 
@@ -185,6 +193,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 ? TimeFormat.CLOCK_24H
                 : TimeFormat.CLOCK_12H;
 
+        hideTaskKeyboard();
         MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
                 .setTitleText(R.string.pick_time)
                 .setTimeFormat(timeFormat)

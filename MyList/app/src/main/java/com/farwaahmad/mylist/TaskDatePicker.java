@@ -1,8 +1,6 @@
 package com.farwaahmad.mylist;
 
 import android.app.Dialog;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -11,7 +9,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import android.content.Context;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -62,8 +63,9 @@ public class TaskDatePicker extends DialogFragment {
         view.findViewById(R.id.btnPreviousMonth).setOnClickListener(v -> moveMonth(-1));
         view.findViewById(R.id.btnNextMonth).setOnClickListener(v -> moveMonth(1));
         render();
-        return new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.choose_date).setView(view)
+        return new MaterialAlertDialogBuilder(requireContext())
+                .setCustomTitle(getLayoutInflater().inflate(R.layout.picker_dialog_title, null))
+                .setView(view)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.set_date, (dialog, which) -> {
                     Bundle result = new Bundle(); result.putString(RESULT, selected);
@@ -92,7 +94,7 @@ public class TaskDatePicker extends DialogFragment {
         years.setContentDescription(getString(R.string.calendar_year));
         row.addView(months, new LinearLayout.LayoutParams(0, -2, 1));
         row.addView(years, new LinearLayout.LayoutParams(0, -2, 1));
-        new AlertDialog.Builder(requireContext()).setTitle(R.string.choose_month_year)
+        new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.choose_month_year)
                 .setView(row).setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok, (d, w) -> {
                     month.set(Calendar.DAY_OF_MONTH, 1);
@@ -104,10 +106,9 @@ public class TaskDatePicker extends DialogFragment {
     @Override public void onStart() {
         super.onStart();
         if (getDialog() != null && getDialog().getWindow() != null) {
-            GradientDrawable surface = new GradientDrawable();
-            surface.setColor(ContextCompat.getColor(requireContext(), R.color.white));
-            surface.setCornerRadius(24 * getResources().getDisplayMetrics().density);
-            getDialog().getWindow().setBackgroundDrawable(surface);
+            getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            InputMethodManager keyboard = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            keyboard.hideSoftInputFromWindow(getDialog().getWindow().getDecorView().getWindowToken(), 0);
         }
     }
 

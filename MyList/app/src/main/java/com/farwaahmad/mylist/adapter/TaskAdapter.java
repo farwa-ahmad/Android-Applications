@@ -446,6 +446,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             int position = getPositionForTaskId(task.getId());
             if (position != RecyclerView.NO_POSITION) notifyItemChanged(position);
         });
+        hideKeyboard(holder.taskTitle);
         TaskDatePicker.show(activity.getSupportFragmentManager(), "editTaskDate", draftDueDate);
     }
 
