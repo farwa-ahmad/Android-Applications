@@ -67,6 +67,9 @@
     <string name="auth_error">Couldn’t connect your private task space. Check your internet connection and Firebase setup.</string>
     <string name="load_tasks_error">Couldn’t refresh your tasks.</string>
     <string name="delete_task_error">Couldn’t delete that task.</string>
+    <string name="task_deleted">Task deleted</string>
+    <string name="undo">Undo</string>
+    <string name="restore_task_error">Couldn’t restore that task.</string>
     <string name="update_task_error">Couldn’t update that task.</string>
 
     <string name="account">Account</string>
