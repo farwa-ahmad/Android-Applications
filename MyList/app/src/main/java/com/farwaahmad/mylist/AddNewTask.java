@@ -110,8 +110,12 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 dueTime = "";
                 updateDueDateUi();
             } else {
-                updateDueDateUi();
                 showDatePicker();
+                binding.btnPickDate.post(() -> {
+                    if (binding != null) {
+                        updateDueDateUi();
+                    }
+                });
             }
         });
 
