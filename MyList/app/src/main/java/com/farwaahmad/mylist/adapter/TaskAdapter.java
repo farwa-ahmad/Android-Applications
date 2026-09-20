@@ -2,7 +2,6 @@ package com.farwaahmad.mylist.adapter;
 
 import com.farwaahmad.mylist.TaskDatePicker;
 import androidx.fragment.app.FragmentActivity;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.graphics.Paint;
 import android.os.Handler;
@@ -30,6 +29,8 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -470,20 +471,34 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             time = Calendar.getInstance();
         }
 
-        TimePickerDialog dialog = new TimePickerDialog(
-                context,
-                (picker, hourOfDay, minute) -> {
-                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
-                        return;
-                    }
-                    draftDueTime = TaskDateUtils.toStorageTime(hourOfDay, minute);
-                    bindDraftTimeControls(holder);
-                },
-                time.get(Calendar.HOUR_OF_DAY),
-                time.get(Calendar.MINUTE),
-                android.text.format.DateFormat.is24HourFormat(context)
-        );
-        dialog.show();
+        int timeFormat = android.text.format.DateFormat.is24HourFormat(context)
+                ? TimeFormat.CLOCK_24H
+                : TimeFormat.CLOCK_12H;
+
+        hideKeyboard(holder.taskTitle);
+
+        MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                .setTitleText(R.string.pick_time)
+                .setTimeFormat(timeFormat)
+                .setInputMode(MaterialTimePicker.INPUT_MODE_CLOCK)
+                .setHour(time.get(Calendar.HOUR_OF_DAY))
+                .setMinute(time.get(Calendar.MINUTE))
+                .build();
+
+        timePicker.addOnPositiveButtonClickListener(view -> {
+            if (task.getId() == null || !task.getId().equals(editingTaskId)) {
+                return;
+            }
+
+            draftDueTime = TaskDateUtils.toStorageTime(
+                    timePicker.getHour(),
+                    timePicker.getMinute()
+            );
+            bindDraftTimeControls(holder);
+        });
+
+        FragmentActivity activity = (FragmentActivity) context;
+        timePicker.show(activity.getSupportFragmentManager(), "MyListEditTimePicker");
     }
 
     private void startInlineEdit(int position) {
