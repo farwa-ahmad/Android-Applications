@@ -414,7 +414,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             draftDueTime = "";
         }
 
-        holder.inlineTimeRow.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
+        holder.editPickTime.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
 
         boolean hasTime = !draftDueTime.isEmpty();
         holder.editPickTime.setChecked(hasTime);
@@ -967,7 +967,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final MaterialButton editToday;
         final MaterialButton editTomorrow;
         final MaterialButton editPickDate;
-        final View inlineTimeRow;
         final MaterialButton editPickTime;
         final MaterialButton editCancel;
         final MaterialButton editSave;
@@ -987,7 +986,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             editToday = itemView.findViewById(R.id.btnEditToday);
             editTomorrow = itemView.findViewById(R.id.btnEditTomorrow);
             editPickDate = itemView.findViewById(R.id.btnEditPickDate);
-            inlineTimeRow = itemView.findViewById(R.id.inlineTimeRow);
             editPickTime = itemView.findViewById(R.id.btnEditPickTime);
             editCancel = itemView.findViewById(R.id.btnEditCancel);
             editSave = itemView.findViewById(R.id.btnEditSave);

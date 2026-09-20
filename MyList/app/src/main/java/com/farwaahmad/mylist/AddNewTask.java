@@ -238,7 +238,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
             dueTime = "";
         }
 
-        binding.timeOptionsRow.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
+        binding.btnPickTime.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
 
         boolean hasTime = !dueTime.isEmpty();
         binding.btnPickTime.setChecked(hasTime);

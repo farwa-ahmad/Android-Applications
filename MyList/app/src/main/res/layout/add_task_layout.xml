@@ -61,23 +61,24 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/scheduleOptions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="16dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnToday"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:layout_weight="1"
                 android:minWidth="0dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="@string/today"
                 android:textAllCaps="false"
                 android:textColor="@color/quick_date_text"
+                android:maxLines="1"
                 app:backgroundTint="@color/quick_date_background"
                 app:cornerRadius="20dp"
                 app:strokeColor="@color/quick_date_stroke"
@@ -86,14 +87,15 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTomorrow"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
                 android:minWidth="0dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="@string/tomorrow"
                 android:textAllCaps="false"
                 android:textColor="@color/quick_date_text"
+                android:maxLines="1"
                 app:backgroundTint="@color/quick_date_background"
                 app:cornerRadius="20dp"
                 app:strokeColor="@color/quick_date_stroke"
@@ -102,29 +104,19 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPickDate"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1.2"
                 android:minWidth="0dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="@string/pick_date"
                 android:textAllCaps="false"
                 android:textColor="@color/quick_date_text"
+                android:maxLines="1"
                 app:backgroundTint="@color/quick_date_background"
                 app:cornerRadius="20dp"
                 app:strokeColor="@color/quick_date_stroke"
                 app:strokeWidth="1dp" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/timeOptionsRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPickTime"
@@ -132,17 +124,33 @@
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:minWidth="0dp"
-                android:paddingStart="18dp"
-                android:paddingEnd="18dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="@string/pick_time"
                 android:textAllCaps="false"
                 android:textColor="@color/quick_date_text"
+                android:maxLines="1"
+                android:visibility="gone"
                 app:backgroundTint="@color/quick_date_background"
                 app:cornerRadius="20dp"
                 app:strokeColor="@color/quick_date_stroke"
                 app:strokeWidth="1dp" />
 
-        </LinearLayout>
+            <androidx.constraintlayout.helper.widget.Flow
+                android:id="@+id/scheduleFlow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:constraint_referenced_ids="btnToday,btnTomorrow,btnPickDate,btnPickTime"
+                app:flow_horizontalBias="0"
+                app:flow_horizontalGap="8dp"
+                app:flow_horizontalStyle="packed"
+                app:flow_verticalGap="8dp"
+                app:flow_wrapMode="chain"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"

@@ -74,7 +74,7 @@
                 android:maxLines="1"
                 android:textColor="@color/dark_gray"
                 android:textSize="13sp"
-                tools:text="24 Sep" />
+                tools:text="Today, 9:00 AM" />
 
         </LinearLayout>
 
@@ -89,25 +89,24 @@
             android:visibility="gone"
             tools:visibility="visible">
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/inlineScheduleOptions"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_height="wrap_content">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEditToday"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:layout_weight="1"
                     android:minWidth="0dp"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:text="@string/today"
                     android:textAllCaps="false"
                     android:textColor="@color/quick_date_text"
                     android:textSize="12sp"
+                    android:maxLines="1"
                     app:backgroundTint="@color/quick_date_background"
                     app:cornerRadius="20dp"
                     app:strokeColor="@color/quick_date_stroke"
@@ -116,17 +115,16 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEditTomorrow"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1.2"
                     android:minWidth="0dp"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:text="@string/tomorrow"
                     android:textAllCaps="false"
                     android:textColor="@color/quick_date_text"
                     android:textSize="12sp"
+                    android:maxLines="1"
                     app:backgroundTint="@color/quick_date_background"
                     app:cornerRadius="20dp"
                     app:strokeColor="@color/quick_date_stroke"
@@ -135,35 +133,20 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEditPickDate"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1.35"
-                    android:ellipsize="end"
-                    android:maxLines="1"
                     android:minWidth="0dp"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:text="@string/pick_date"
                     android:textAllCaps="false"
                     android:textColor="@color/quick_date_text"
                     android:textSize="12sp"
+                    android:maxLines="1"
                     app:backgroundTint="@color/quick_date_background"
                     app:cornerRadius="20dp"
                     app:strokeColor="@color/quick_date_stroke"
                     app:strokeWidth="1dp" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/inlineTimeRow"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone"
-                tools:visibility="visible">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEditPickTime"
@@ -171,18 +154,34 @@
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
                     android:minWidth="0dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:text="@string/pick_time"
                     android:textAllCaps="false"
                     android:textColor="@color/quick_date_text"
                     android:textSize="12sp"
+                    android:maxLines="1"
+                    android:visibility="gone"
                     app:backgroundTint="@color/quick_date_background"
                     app:cornerRadius="20dp"
                     app:strokeColor="@color/quick_date_stroke"
                     app:strokeWidth="1dp" />
 
-            </LinearLayout>
+                <androidx.constraintlayout.helper.widget.Flow
+                    android:id="@+id/inlineScheduleFlow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:constraint_referenced_ids="btnEditToday,btnEditTomorrow,btnEditPickDate,btnEditPickTime"
+                    app:flow_horizontalBias="0"
+                    app:flow_horizontalGap="6dp"
+                    app:flow_horizontalStyle="packed"
+                    app:flow_verticalGap="6dp"
+                    app:flow_wrapMode="chain"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
