@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.farwaahmad.mylist.adapter.TaskAdapter;
+import com.farwaahmad.mylist.model.TaskModel;
 
 public class TouchHelper extends ItemTouchHelper.SimpleCallback {
 
@@ -55,15 +56,26 @@ public class TouchHelper extends ItemTouchHelper.SimpleCallback {
         }
         viewHolder.itemView.post(taskAdapter::hideSwipeHint);
 
+        TaskModel task = taskAdapter.getTaskAt(position);
+        if (task == null) {
+            taskAdapter.restoreItem(position);
+            return;
+        }
+
         if (direction == ItemTouchHelper.LEFT) {
+            // ItemTouchHelper leaves a fully swiped row translated until the adapter
+            // explicitly rebinds it. Restore immediately so the destructive action
+            // background never remains visible while the confirmation dialog is open.
+            taskAdapter.restoreItem(position);
+
+            // Keep the stable task captured at swipe time. Adapter positions can change
+            // while the dialog is open because Firestore updates the list in real time.
             new AlertDialog.Builder(taskAdapter.getContext())
                     .setTitle(R.string.delete_task_title)
                     .setMessage(R.string.delete_task_message)
                     .setPositiveButton(R.string.yes, (dialog, which) ->
-                            taskAdapter.requestDelete(position))
-                    .setNegativeButton(R.string.no, (dialog, which) ->
-                            taskAdapter.restoreItem(position))
-                    .setOnCancelListener(dialog -> taskAdapter.restoreItem(position))
+                            taskAdapter.requestDelete(task, position))
+                    .setNegativeButton(R.string.no, null)
                     .show();
         } else {
             taskAdapter.requestEdit(position);
