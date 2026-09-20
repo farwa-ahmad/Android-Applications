@@ -205,7 +205,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         taskHolder.itemView.animate().cancel();
         taskHolder.itemView.setTranslationX(0f);
-        taskHolder.itemView.setAlpha(completed && !editing ? 0.62f : 1f);
+        // Keep the card itself opaque so swipe action colors never bleed
+        // through completed rows. De-emphasize only the row's content.
+        taskHolder.itemView.setAlpha(1f);
+        float contentAlpha = completed && !editing ? 0.62f : 1f;
+        taskHolder.taskTitle.setAlpha(contentAlpha);
+        taskHolder.dueDateText.setAlpha(contentAlpha);
+        taskHolder.taskCheckBox.setAlpha(contentAlpha);
 
         bindTaskTitle(taskHolder, task, completed, editing);
 
