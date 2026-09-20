@@ -19,5 +19,7 @@
     <color name="task_divider">#18000000</color>
     <color name="account_button_surface">#D9FFFFFF</color>
     <color name="account_button_stroke">#263A2C51</color>
+    <color name="view_toggle_track_surface">#1FFFFFFF</color>
+    <color name="view_toggle_selected_surface">#F2FFFFFF</color>
     <color name="transparent">#00000000</color>
 </resources>
