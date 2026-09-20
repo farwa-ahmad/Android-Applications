@@ -142,6 +142,40 @@ public class TaskRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public void restoreTask(@NonNull TaskModel task,
+                            @NonNull OperationCallback callback) {
+        String id = task.getId();
+        String taskText = task.getTask();
+
+        if (id == null || id.trim().isEmpty()
+                || taskText == null || taskText.trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Task identity is missing."));
+            return;
+        }
+
+        Map<String, Object> restored = new HashMap<>();
+        restored.put("task", taskText);
+        restored.put("due", task.getDue() == null ? "" : task.getDue());
+
+        String dueTime = task.getDueTime();
+        if (dueTime != null && !dueTime.isEmpty()) {
+            restored.put("dueTime", dueTime);
+        }
+
+        restored.put("status", task.getStatus());
+        restored.put(
+                "time",
+                task.getTime() != null
+                        ? task.getTime()
+                        : FieldValue.serverTimestamp()
+        );
+
+        tasks().document(id)
+                .set(restored)
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
     public void deleteAllTasks(@NonNull OperationCallback callback) {
         deleteNextBatch(callback);
     }
