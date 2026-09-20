@@ -418,7 +418,7 @@ public class MainActivity extends AppCompatActivity
         );
 
         int totalCount = scheduleTaskAdapter.getTaskCount();
-        binding.scheduleEmptyState.setVisibility(
+        binding.tvNoScheduledTasks.setVisibility(
                 totalCount == 0 ? View.VISIBLE : View.GONE
         );
         binding.rvScheduleTasks.setVisibility(

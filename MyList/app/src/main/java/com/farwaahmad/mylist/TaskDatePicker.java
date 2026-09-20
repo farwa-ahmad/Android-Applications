@@ -68,7 +68,10 @@ public class TaskDatePicker extends DialogFragment {
         view.findViewById(R.id.btnPreviousMonth).setOnClickListener(v -> moveMonth(-1));
         view.findViewById(R.id.btnNextMonth).setOnClickListener(v -> moveMonth(1));
         render();
-        return new MaterialAlertDialogBuilder(requireContext())
+        return new MaterialAlertDialogBuilder(
+                requireContext(),
+                R.style.ThemeOverlay_MyList_DatePickerDialog
+        )
                 .setCustomTitle(getLayoutInflater().inflate(R.layout.picker_dialog_title, null))
                 .setView(view)
                 .setNegativeButton(R.string.cancel, null)
