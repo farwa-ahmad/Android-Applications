@@ -390,6 +390,7 @@ public class MainActivity extends AppCompatActivity
     public void onTaskEditSaveRequested(@NonNull TaskModel task,
                                         @NonNull String taskText,
                                         @NonNull String dueDate,
+                                        @NonNull String dueTime,
                                         @NonNull TaskAdapter.EditSaveCallback callback) {
         if (taskRepository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
@@ -400,6 +401,7 @@ public class MainActivity extends AppCompatActivity
                 task.getId(),
                 taskText,
                 dueDate,
+                dueTime,
                 new TaskRepository.OperationCallback() {
                     @Override
                     public void onSuccess() {
@@ -485,6 +487,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onTaskSaveRequested(@NonNull String taskText,
                                     @NonNull String dueDate,
+                                    @NonNull String dueTime,
                                     @NonNull AddNewTask.SaveCallback callback) {
         if (taskRepository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
@@ -492,7 +495,7 @@ public class MainActivity extends AppCompatActivity
         }
 
         boolean shouldTeachSwipe = launchManager.shouldShowSwipeHint();
-        taskRepository.addTask(taskText, dueDate, new TaskRepository.AddTaskCallback() {
+        taskRepository.addTask(taskText, dueDate, dueTime, new TaskRepository.AddTaskCallback() {
             @Override
             public void onSuccess(@NonNull String taskId) {
                 if (shouldTeachSwipe) {

@@ -1,6 +1,7 @@
 package com.farwaahmad.mylist.adapter;
 
 import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.graphics.Paint;
 import android.os.Handler;
@@ -29,12 +30,10 @@ import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -61,6 +60,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private String pendingFocusTaskId;
     private String draftTaskText = "";
     private String draftDueDate = "";
+    private String draftDueTime = "";
     private boolean editSaveInProgress;
     private boolean completedCollapsed = true;
 
@@ -105,7 +105,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 continue;
             }
 
-            switch (TaskDateUtils.bucketFor(task.getDue())) {
+            switch (TaskDateUtils.bucketFor(task.getDue(), task.getDueTime())) {
                 case TaskDateUtils.BUCKET_OVERDUE:
                     overdue.add(task);
                     break;
@@ -121,7 +121,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         Comparator<TaskModel> byDueDate =
-                Comparator.comparingLong(task -> TaskDateUtils.sortTimestamp(task.getDue()));
+                Comparator.comparingLong(task ->
+                        TaskDateUtils.sortTimestamp(task.getDue(), task.getDueTime()));
         overdue.sort(byDueDate);
         today.sort(byDueDate);
         upcoming.sort(byDueDate);
@@ -326,19 +327,30 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editToday.setCheckable(true);
         holder.editTomorrow.setCheckable(true);
         holder.editPickDate.setCheckable(true);
+        holder.editPickTime.setCheckable(true);
         bindDraftDateControls(holder);
         setInlineControlsEnabled(holder, !editSaveInProgress);
         updateInlineSaveButton(holder);
 
         holder.editToday.setOnClickListener(v -> {
             String today = storageDateForOffset(0);
-            draftDueDate = today.equals(draftDueDate) ? "" : today;
+            if (today.equals(draftDueDate)) {
+                draftDueDate = "";
+                draftDueTime = "";
+            } else {
+                draftDueDate = today;
+            }
             bindDraftDateControls(holder);
         });
 
         holder.editTomorrow.setOnClickListener(v -> {
             String tomorrow = storageDateForOffset(1);
-            draftDueDate = tomorrow.equals(draftDueDate) ? "" : tomorrow;
+            if (tomorrow.equals(draftDueDate)) {
+                draftDueDate = "";
+                draftDueTime = "";
+            } else {
+                draftDueDate = tomorrow;
+            }
             bindDraftDateControls(holder);
         });
 
@@ -351,9 +363,23 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             if (customDateSelected) {
                 draftDueDate = "";
+                draftDueTime = "";
                 bindDraftDateControls(holder);
             } else {
                 showDatePicker(holder, task);
+            }
+        });
+
+        holder.editPickTime.setOnClickListener(v -> {
+            if (draftDueDate.isEmpty()) {
+                return;
+            }
+
+            if (!draftDueTime.isEmpty()) {
+                draftDueTime = "";
+                bindDraftTimeControls(holder);
+            } else {
+                showTimePicker(holder, task);
             }
         });
 
@@ -374,7 +400,28 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editTomorrow.setChecked(isTomorrow);
         holder.editPickDate.setChecked(isCustomDate);
         holder.editPickDate.setText(
-                isCustomDate ? compactDate(draftDueDate) : context.getString(R.string.pick_date)
+                isCustomDate
+                        ? TaskDateUtils.formatDateForRow(context, draftDueDate)
+                        : context.getString(R.string.pick_date)
+        );
+
+        bindDraftTimeControls(holder);
+    }
+
+    private void bindDraftTimeControls(@NonNull TaskViewHolder holder) {
+        boolean hasDueDate = !draftDueDate.isEmpty();
+        if (!hasDueDate) {
+            draftDueTime = "";
+        }
+
+        holder.inlineTimeRow.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
+
+        boolean hasTime = !draftDueTime.isEmpty();
+        holder.editPickTime.setChecked(hasTime);
+        holder.editPickTime.setText(
+                hasTime
+                        ? TaskDateUtils.formatTimeForDisplay(context, draftDueTime)
+                        : context.getString(R.string.pick_time)
         );
     }
 
@@ -405,6 +452,35 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         dialog.show();
     }
 
+    private void showTimePicker(@NonNull TaskViewHolder holder,
+                                @NonNull TaskModel task) {
+        if (task.getId() == null
+                || !task.getId().equals(editingTaskId)
+                || draftDueDate.isEmpty()) {
+            return;
+        }
+
+        Calendar time = TaskDateUtils.calendarForDueTime(draftDueTime);
+        if (time == null) {
+            time = Calendar.getInstance();
+        }
+
+        TimePickerDialog dialog = new TimePickerDialog(
+                context,
+                (picker, hourOfDay, minute) -> {
+                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
+                        return;
+                    }
+                    draftDueTime = TaskDateUtils.toStorageTime(hourOfDay, minute);
+                    bindDraftTimeControls(holder);
+                },
+                time.get(Calendar.HOUR_OF_DAY),
+                time.get(Calendar.MINUTE),
+                android.text.format.DateFormat.is24HourFormat(context)
+        );
+        dialog.show();
+    }
+
     private void startInlineEdit(int position) {
         if (!isTaskPosition(position) || editSaveInProgress) {
             return;
@@ -425,6 +501,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         draftDueDate = TaskDateUtils.normalizeForStorage(
                 task.getDue() == null ? "" : task.getDue()
         );
+        draftDueTime = draftDueDate.isEmpty()
+                ? ""
+                : TaskDateUtils.normalizeTimeForStorage(task.getDueTime());
         editSaveInProgress = false;
         hideSwipeHint();
 
@@ -467,8 +546,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         String originalDue = TaskDateUtils.normalizeForStorage(
                 task.getDue() == null ? "" : task.getDue()
         );
+        String originalDueTime = originalDue.isEmpty()
+                ? ""
+                : TaskDateUtils.normalizeTimeForStorage(task.getDueTime());
 
-        if (taskText.equals(originalText) && draftDueDate.equals(originalDue)) {
+        if (taskText.equals(originalText)
+                && draftDueDate.equals(originalDue)
+                && draftDueTime.equals(originalDueTime)) {
             cancelInlineEdit(holder, task);
             return;
         }
@@ -482,6 +566,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 task,
                 taskText,
                 draftDueDate,
+                draftDueTime,
                 new EditSaveCallback() {
                     @Override
                     public void onSuccess() {
@@ -520,6 +605,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editToday.setEnabled(enabled);
         holder.editTomorrow.setEnabled(enabled);
         holder.editPickDate.setEnabled(enabled);
+        holder.editPickTime.setEnabled(enabled);
         holder.editCancel.setEnabled(enabled);
         holder.editSave.setEnabled(enabled && !draftTaskText.trim().isEmpty());
         holder.editSave.setText(
@@ -548,6 +634,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         pendingFocusTaskId = null;
         draftTaskText = "";
         draftDueDate = "";
+        draftDueTime = "";
         editSaveInProgress = false;
     }
 
@@ -573,29 +660,19 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                              @NonNull TaskModel task,
                              int section,
                              boolean completed) {
-        String dueDate = task.getDue();
-        int bucket = TaskDateUtils.bucketFor(dueDate);
+        String displayDue = TaskDateUtils.formatDueForRow(
+                context,
+                task.getDue(),
+                task.getDueTime()
+        );
 
-        boolean hideDate = dueDate == null
-                || dueDate.trim().isEmpty()
-                || bucket == TaskDateUtils.BUCKET_NONE
-                || bucket == TaskDateUtils.BUCKET_TODAY
-                || section == SECTION_TODAY
-                || section == SECTION_NO_DUE_DATE;
-
-        if (hideDate) {
-            holder.dueDateText.setVisibility(View.GONE);
-            return;
-        }
-
-        String displayDate = compactDate(dueDate);
-        if (displayDate.isEmpty()) {
+        if (displayDue.isEmpty()) {
             holder.dueDateText.setVisibility(View.GONE);
             return;
         }
 
         holder.dueDateText.setVisibility(View.VISIBLE);
-        holder.dueDateText.setText(displayDate);
+        holder.dueDateText.setText(displayDue);
         holder.dueDateText.setTextColor(
                 ContextCompat.getColor(
                         context,
@@ -604,39 +681,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 : R.color.dark_gray
                 )
         );
-    }
-
-    @NonNull
-    private String compactDate(@Nullable String dueDate) {
-        if (dueDate == null || dueDate.trim().isEmpty()) {
-            return "";
-        }
-
-        if (TaskDateUtils.bucketFor(dueDate) == TaskDateUtils.BUCKET_TODAY) {
-            return "";
-        }
-
-        Calendar due = TaskDateUtils.calendarForDue(dueDate);
-        if (due == null) {
-            return dueDate;
-        }
-
-        Calendar today = Calendar.getInstance();
-        Calendar tomorrow = (Calendar) today.clone();
-        tomorrow.add(Calendar.DAY_OF_MONTH, 1);
-
-        if (sameDay(due, tomorrow)) {
-            return context.getString(R.string.tomorrow);
-        }
-
-        return new SimpleDateFormat("d MMM", Locale.getDefault())
-                .format(due.getTime());
-    }
-
-    private boolean sameDay(@NonNull Calendar first, @NonNull Calendar second) {
-        return first.get(Calendar.ERA) == second.get(Calendar.ERA)
-                && first.get(Calendar.YEAR) == second.get(Calendar.YEAR)
-                && first.get(Calendar.DAY_OF_YEAR) == second.get(Calendar.DAY_OF_YEAR);
     }
 
     private void bindHeader(@NonNull HeaderViewHolder holder, @NonNull Row row) {
@@ -923,6 +967,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final MaterialButton editToday;
         final MaterialButton editTomorrow;
         final MaterialButton editPickDate;
+        final View inlineTimeRow;
+        final MaterialButton editPickTime;
         final MaterialButton editCancel;
         final MaterialButton editSave;
         final View divider;
@@ -941,6 +987,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             editToday = itemView.findViewById(R.id.btnEditToday);
             editTomorrow = itemView.findViewById(R.id.btnEditTomorrow);
             editPickDate = itemView.findViewById(R.id.btnEditPickDate);
+            inlineTimeRow = itemView.findViewById(R.id.inlineTimeRow);
+            editPickTime = itemView.findViewById(R.id.btnEditPickTime);
             editCancel = itemView.findViewById(R.id.btnEditCancel);
             editSave = itemView.findViewById(R.id.btnEditSave);
             divider = itemView.findViewById(R.id.taskDivider);
@@ -951,6 +999,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void onTaskEditSaveRequested(@NonNull TaskModel task,
                                      @NonNull String taskText,
                                      @NonNull String dueDate,
+                                     @NonNull String dueTime,
                                      @NonNull EditSaveCallback callback);
 
         void onDeleteTaskRequested(@NonNull TaskModel task, int adapterPosition);

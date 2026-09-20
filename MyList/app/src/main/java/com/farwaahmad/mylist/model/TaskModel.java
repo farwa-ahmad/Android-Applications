@@ -7,6 +7,7 @@ public class TaskModel {
     private String id;
     private String task;
     private String due;
+    private String dueTime;
     private int status;
 
     public TaskModel() {
@@ -37,6 +38,14 @@ public class TaskModel {
 
     public void setDue(String due) {
         this.due = due;
+    }
+
+    public String getDueTime() {
+        return dueTime;
+    }
+
+    public void setDueTime(String dueTime) {
+        this.dueTime = dueTime;
     }
 
     public int getStatus() {

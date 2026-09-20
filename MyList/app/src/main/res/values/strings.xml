@@ -31,6 +31,7 @@
     <string name="task_hint">What needs to be done?</string>
     <string name="add_due_date">Add due date</string>
     <string name="pick_date">Pick date</string>
+    <string name="pick_time">Pick time</string>
     <string name="remove_due_date">Remove due date</string>
     <string name="due_picker_format">Due: %1$s</string>
     <string name="save_task">Save task</string>

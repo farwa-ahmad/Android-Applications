@@ -1,6 +1,7 @@
 package com.farwaahmad.mylist;
 
 import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
@@ -30,6 +31,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     private AddTaskLayoutBinding binding;
     private String dueDate = "";
+    private String dueTime = "";
     private boolean newTaskCreated;
     private TaskSaveListener taskSaveListener;
 
@@ -56,6 +58,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
         binding.btnToday.setCheckable(true);
         binding.btnTomorrow.setCheckable(true);
         binding.btnPickDate.setCheckable(true);
+        binding.btnPickTime.setCheckable(true);
 
         updateDueDateUi();
         updateSaveButtonState();
@@ -71,13 +74,23 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
         binding.btnToday.setOnClickListener(v -> {
             String today = storageDateForOffset(0);
-            dueDate = today.equals(dueDate) ? "" : today;
+            if (today.equals(dueDate)) {
+                dueDate = "";
+                dueTime = "";
+            } else {
+                dueDate = today;
+            }
             updateDueDateUi();
         });
 
         binding.btnTomorrow.setOnClickListener(v -> {
             String tomorrow = storageDateForOffset(1);
-            dueDate = tomorrow.equals(dueDate) ? "" : tomorrow;
+            if (tomorrow.equals(dueDate)) {
+                dueDate = "";
+                dueTime = "";
+            } else {
+                dueDate = tomorrow;
+            }
             updateDueDateUi();
         });
 
@@ -90,11 +103,26 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
             if (customDateSelected) {
                 dueDate = "";
+                dueTime = "";
                 updateDueDateUi();
             } else {
                 showDatePicker();
             }
         });
+
+        binding.btnPickTime.setOnClickListener(v -> {
+            if (dueDate.isEmpty()) {
+                return;
+            }
+
+            if (!dueTime.isEmpty()) {
+                dueTime = "";
+                updateDueTimeUi();
+            } else {
+                showTimePicker();
+            }
+        });
+
         binding.btnSave.setOnClickListener(v -> saveTask());
 
         binding.etTaskText.requestFocus();
@@ -160,6 +188,29 @@ public class AddNewTask extends BottomSheetDialogFragment {
         datePickerDialog.show();
     }
 
+    private void showTimePicker() {
+        if (dueDate.isEmpty()) {
+            return;
+        }
+
+        Calendar time = TaskDateUtils.calendarForDueTime(dueTime);
+        if (time == null) {
+            time = Calendar.getInstance();
+        }
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(
+                requireContext(),
+                (picker, hourOfDay, minute) -> {
+                    dueTime = TaskDateUtils.toStorageTime(hourOfDay, minute);
+                    updateDueTimeUi();
+                },
+                time.get(Calendar.HOUR_OF_DAY),
+                time.get(Calendar.MINUTE),
+                android.text.format.DateFormat.is24HourFormat(requireContext())
+        );
+        timePickerDialog.show();
+    }
+
     private void updateDueDateUi() {
         boolean hasDueDate = !dueDate.isEmpty();
 
@@ -176,6 +227,25 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 isCustomDate
                         ? TaskDateUtils.formatForDisplay(requireContext(), dueDate)
                         : getString(R.string.pick_date)
+        );
+
+        updateDueTimeUi();
+    }
+
+    private void updateDueTimeUi() {
+        boolean hasDueDate = !dueDate.isEmpty();
+        if (!hasDueDate) {
+            dueTime = "";
+        }
+
+        binding.timeOptionsRow.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
+
+        boolean hasTime = !dueTime.isEmpty();
+        binding.btnPickTime.setChecked(hasTime);
+        binding.btnPickTime.setText(
+                hasTime
+                        ? TaskDateUtils.formatTimeForDisplay(requireContext(), dueTime)
+                        : getString(R.string.pick_time)
         );
     }
 
@@ -210,6 +280,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
         taskSaveListener.onTaskSaveRequested(
                 taskText,
                 dueDate,
+                dueTime,
                 new SaveCallback() {
                     @Override
                     public void onSuccess() {
@@ -248,6 +319,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
         binding.btnToday.setEnabled(!saving);
         binding.btnTomorrow.setEnabled(!saving);
         binding.btnPickDate.setEnabled(!saving);
+        binding.btnPickTime.setEnabled(!saving);
         binding.etTaskText.setEnabled(!saving);
         binding.btnSave.setText(saving ? R.string.saving : R.string.add_task);
     }
@@ -297,6 +369,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
     public interface TaskSaveListener {
         void onTaskSaveRequested(@NonNull String taskText,
                                  @NonNull String dueDate,
+                                 @NonNull String dueTime,
                                  @NonNull SaveCallback callback);
 
         void onTaskSheetDismissed(boolean taskCreated);

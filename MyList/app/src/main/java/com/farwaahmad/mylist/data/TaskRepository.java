@@ -92,10 +92,14 @@ public class TaskRepository {
 
     public void addTask(@NonNull String taskText,
                         @NonNull String dueDate,
+                        @NonNull String dueTime,
                         @NonNull AddTaskCallback callback) {
         Map<String, Object> task = new HashMap<>();
         task.put("task", taskText);
         task.put("due", dueDate);
+        if (!dueTime.isEmpty()) {
+            task.put("dueTime", dueTime);
+        }
         task.put("status", 0);
         task.put("time", FieldValue.serverTimestamp());
 
@@ -108,9 +112,15 @@ public class TaskRepository {
     public void updateTask(@NonNull String id,
                            @NonNull String taskText,
                            @NonNull String dueDate,
+                           @NonNull String dueTime,
                            @NonNull OperationCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("task", taskText);
+        updates.put("due", dueDate);
+        updates.put("dueTime", dueTime.isEmpty() ? FieldValue.delete() : dueTime);
+
         tasks().document(id)
-                .update("task", taskText, "due", dueDate)
+                .update(updates)
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(callback::onError);
     }

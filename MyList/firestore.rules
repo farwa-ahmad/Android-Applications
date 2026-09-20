@@ -8,12 +8,23 @@ service cloud.firestore {
 
     function validTask(data) {
       return data.keys().hasAll(['task', 'status', 'time'])
-             && data.keys().hasOnly(['task', 'due', 'status', 'time'])
+             && data.keys().hasOnly(['task', 'due', 'dueTime', 'status', 'time'])
              && data.task is string
              && data.task.size() > 0
              && data.task.size() <= 500
              && data.get('due', '') is string
              && data.get('due', '').size() <= 10
+             && data.get('dueTime', '') is string
+             && data.get('dueTime', '').size() <= 5
+             && (
+               data.get('dueTime', '') == ''
+               || (
+                 data.get('due', '') != ''
+                 && data.get('dueTime', '').matches(
+                   '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+                 )
+               )
+             )
              && data.status is int
              && (data.status == 0 || data.status == 1)
              && data.time is timestamp;
