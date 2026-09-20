@@ -63,25 +63,27 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="2dp"
         android:layout_marginBottom="8dp"
-        app:cardBackgroundColor="@color/transparent"
+        app:cardBackgroundColor="@color/view_toggle_track_surface"
         app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
         app:strokeColor="@color/account_button_stroke"
         app:strokeWidth="1dp">
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/viewModeToggle"
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            app:selectionRequired="true"
-            app:singleSelection="true">
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="3dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnViewList"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="92dp"
-                android:layout_height="40dp"
+                android:layout_height="34dp"
                 android:checkable="true"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:minWidth="0dp"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
@@ -90,15 +92,17 @@
                 android:textColor="@color/view_toggle_text"
                 android:textSize="13sp"
                 app:backgroundTint="@color/view_toggle_background"
-                app:cornerRadius="18dp"
+                app:cornerRadius="17dp"
                 app:strokeWidth="0dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnViewSchedule"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="92dp"
-                android:layout_height="40dp"
+                android:layout_height="34dp"
                 android:checkable="true"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:minWidth="0dp"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
@@ -107,10 +111,10 @@
                 android:textColor="@color/view_toggle_text"
                 android:textSize="13sp"
                 app:backgroundTint="@color/view_toggle_background"
-                app:cornerRadius="18dp"
+                app:cornerRadius="17dp"
                 app:strokeWidth="0dp" />
 
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
