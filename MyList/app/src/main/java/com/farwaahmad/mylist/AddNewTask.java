@@ -110,6 +110,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 dueTime = "";
                 updateDueDateUi();
             } else {
+                updateDueDateUi();
                 showDatePicker();
             }
         });
