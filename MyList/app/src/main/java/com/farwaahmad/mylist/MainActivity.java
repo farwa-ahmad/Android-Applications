@@ -127,12 +127,9 @@ public class MainActivity extends AppCompatActivity
         binding.rvScheduleTasks.setAdapter(scheduleTaskAdapter);
 
         binding.btnViewList.setChecked(true);
-        binding.viewModeToggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (!isChecked) {
-                return;
-            }
-            setScheduleMode(checkedId == R.id.btnViewSchedule);
-        });
+        binding.btnViewSchedule.setChecked(false);
+        binding.btnViewList.setOnClickListener(v -> setScheduleMode(false));
+        binding.btnViewSchedule.setOnClickListener(v -> setScheduleMode(true));
 
         binding.btnPreviousMonth.setOnClickListener(v -> moveScheduleMonth(-1));
         binding.btnNextMonth.setOnClickListener(v -> moveScheduleMonth(1));
@@ -318,6 +315,14 @@ public class MainActivity extends AppCompatActivity
 
     private void setScheduleMode(boolean enabled) {
         scheduleMode = enabled;
+
+        // Keep this custom segmented control mutually exclusive without letting
+        // MaterialButtonToggleGroup reshape the inner corners.
+        binding.btnViewList.setChecked(!enabled);
+        binding.btnViewSchedule.setChecked(enabled);
+        binding.btnViewList.setSelected(!enabled);
+        binding.btnViewSchedule.setSelected(enabled);
+
         binding.rvTasks.setVisibility(enabled ? View.GONE : View.VISIBLE);
         binding.scheduleContainer.setVisibility(enabled ? View.VISIBLE : View.GONE);
 
