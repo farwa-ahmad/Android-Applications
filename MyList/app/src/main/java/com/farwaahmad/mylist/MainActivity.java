@@ -2,6 +2,11 @@ package com.farwaahmad.mylist;
 
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -450,28 +455,69 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        Snackbar.make(
-                        binding.getRoot(),
-                        R.string.task_deleted,
-                        Snackbar.LENGTH_LONG
-                )
-                .setAction(R.string.undo, view ->
-                        repository.restoreTask(task, new TaskRepository.OperationCallback() {
-                            @Override
-                            public void onSuccess() {
-                            }
+        Snackbar snackbar = Snackbar.make(
+                binding.getRoot(),
+                R.string.task_deleted,
+                Snackbar.LENGTH_LONG
+        );
 
-                            @Override
-                            public void onError(@NonNull Exception exception) {
-                                Toast.makeText(
-                                        MainActivity.this,
-                                        R.string.restore_task_error,
-                                        Toast.LENGTH_SHORT
-                                ).show();
-                            }
-                        })
-                )
-                .show();
+        snackbar.setAction(R.string.undo, view ->
+                repository.restoreTask(task, new TaskRepository.OperationCallback() {
+                    @Override
+                    public void onSuccess() {
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception exception) {
+                        Toast.makeText(
+                                MainActivity.this,
+                                R.string.restore_task_error,
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                })
+        );
+
+        styleStatusSnackbar(snackbar);
+        snackbar.show();
+    }
+
+    private void styleStatusSnackbar(@NonNull Snackbar snackbar) {
+        int white = getColor(R.color.white);
+        snackbar.setTextColor(white);
+        snackbar.setActionTextColor(white);
+
+        View snackbarView = snackbar.getView();
+        snackbarView.setBackgroundResource(R.drawable.bg_status_pill);
+        snackbarView.setElevation(dpToPx(5));
+        snackbarView.setMinimumWidth(0);
+
+        TextView message =
+                snackbarView.findViewById(com.google.android.material.R.id.snackbar_text);
+        message.setMaxLines(1);
+
+        TextView action =
+                snackbarView.findViewById(com.google.android.material.R.id.snackbar_action);
+        action.setAllCaps(false);
+
+        ViewGroup.LayoutParams rawParams = snackbarView.getLayoutParams();
+        rawParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+
+        if (rawParams instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) rawParams;
+            params.gravity = Gravity.BOTTOM | Gravity.START;
+            params.setMarginStart(dpToPx(20));
+            // Reserve the bottom-end corner for the floating + button.
+            params.setMarginEnd(dpToPx(96));
+            params.bottomMargin = Math.max(params.bottomMargin, dpToPx(20));
+            snackbarView.setLayoutParams(params);
+        } else {
+            snackbarView.setLayoutParams(rawParams);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 
     @Override
