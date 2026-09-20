@@ -375,6 +375,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 bindDraftDateControls(holder);
             } else {
                 showDatePicker(holder, task);
+                holder.editPickDate.post(() -> {
+                    if (task.getId() != null
+                            && task.getId().equals(editingTaskId)
+                            && holder.getBindingAdapterPosition() != RecyclerView.NO_POSITION) {
+                        bindDraftDateControls(holder);
+                    }
+                });
             }
         });
 
