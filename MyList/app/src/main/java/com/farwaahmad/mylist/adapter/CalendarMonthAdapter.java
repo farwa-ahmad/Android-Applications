@@ -194,8 +194,6 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         int dayTextColor;
         if (selected) {
             dayTextColor = R.color.white;
-        } else if (cell.today) {
-            dayTextColor = R.color.primary;
         } else if (cell.past) {
             dayTextColor = R.color.task_circle_unchecked;
         } else {
