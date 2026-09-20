@@ -16,21 +16,26 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.farwaahmad.mylist.adapter.CalendarMonthAdapter;
+import com.farwaahmad.mylist.adapter.ScheduleTaskAdapter;
 import com.farwaahmad.mylist.adapter.TaskAdapter;
 import com.farwaahmad.mylist.data.AuthRepository;
 import com.farwaahmad.mylist.data.TaskRepository;
 import com.farwaahmad.mylist.databinding.ActivityMainBinding;
 import com.farwaahmad.mylist.model.TaskModel;
+import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -42,7 +47,12 @@ public class MainActivity extends AppCompatActivity
 
     private ActivityMainBinding binding;
     private TaskAdapter taskAdapter;
+    private CalendarMonthAdapter calendarMonthAdapter;
+    private ScheduleTaskAdapter scheduleTaskAdapter;
     private final List<TaskModel> tasks = new ArrayList<>();
+    private final Calendar visibleMonth = Calendar.getInstance();
+    private String selectedScheduleDate;
+    private boolean scheduleMode;
 
     private AuthRepository authRepository;
     private TaskRepository taskRepository;
@@ -100,6 +110,30 @@ public class MainActivity extends AppCompatActivity
         taskAdapter = new TaskAdapter(this, this);
         binding.rvTasks.setAdapter(taskAdapter);
 
+        visibleMonth.set(Calendar.DAY_OF_MONTH, 1);
+        Calendar today = Calendar.getInstance();
+        selectedScheduleDate = TaskDateUtils.toStorageDate(
+                today.get(Calendar.YEAR),
+                today.get(Calendar.MONTH),
+                today.get(Calendar.DAY_OF_MONTH)
+        );
+
+        calendarMonthAdapter = new CalendarMonthAdapter(this::selectScheduleDate);
+        binding.rvCalendar.setLayoutManager(new GridLayoutManager(this, 7));
+        binding.rvCalendar.setAdapter(calendarMonthAdapter);
+
+        scheduleTaskAdapter = new ScheduleTaskAdapter(this::onTaskStatusChanged);
+        binding.rvScheduleTasks.setLayoutManager(new LinearLayoutManager(this));
+        binding.rvScheduleTasks.setAdapter(scheduleTaskAdapter);
+
+        binding.btnViewList.setChecked(true);
+        binding.btnViewSchedule.setChecked(false);
+        binding.btnViewList.setOnClickListener(v -> setScheduleMode(false));
+        binding.btnViewSchedule.setOnClickListener(v -> setScheduleMode(true));
+
+        binding.btnPreviousMonth.setOnClickListener(v -> moveScheduleMonth(-1));
+        binding.btnNextMonth.setOnClickListener(v -> moveScheduleMonth(1));
+
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new TouchHelper(taskAdapter));
         itemTouchHelper.attachToRecyclerView(binding.rvTasks);
 
@@ -141,6 +175,7 @@ public class MainActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         updateCurrentDate();
+        refreshScheduleView();
     }
 
     private void updateCurrentDate() {
@@ -267,12 +302,124 @@ public class MainActivity extends AppCompatActivity
 
     private void showContentState() {
         showLoading(false);
+        refreshScheduleView();
         binding.btnRetry.setVisibility(android.view.View.GONE);
         binding.emptyState.setVisibility(
-                tasks.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE
+                !scheduleMode && tasks.isEmpty()
+                        ? android.view.View.VISIBLE
+                        : android.view.View.GONE
         );
         binding.tvEmptyTitle.setText(R.string.empty_title);
         binding.tvEmptyMessage.setText(R.string.empty_message);
+    }
+
+    private void setScheduleMode(boolean enabled) {
+        scheduleMode = enabled;
+
+        // Keep this custom segmented control mutually exclusive without letting
+        // MaterialButtonToggleGroup reshape the inner corners.
+        binding.btnViewList.setChecked(!enabled);
+        binding.btnViewSchedule.setChecked(enabled);
+        binding.btnViewList.setSelected(!enabled);
+        binding.btnViewSchedule.setSelected(enabled);
+
+        binding.rvTasks.setVisibility(enabled ? View.GONE : View.VISIBLE);
+        binding.scheduleContainer.setVisibility(enabled ? View.VISIBLE : View.GONE);
+
+        if (enabled) {
+            taskAdapter.hideSwipeHint();
+            cancelSwipeHintRetry();
+        }
+
+        showContentState();
+    }
+
+    private void selectScheduleDate(@NonNull String storageDate) {
+        Calendar selected = TaskDateUtils.calendarForDue(storageDate);
+        if (selected == null) {
+            return;
+        }
+
+        selectedScheduleDate = TaskDateUtils.toStorageDate(
+                selected.get(Calendar.YEAR),
+                selected.get(Calendar.MONTH),
+                selected.get(Calendar.DAY_OF_MONTH)
+        );
+        visibleMonth.set(
+                selected.get(Calendar.YEAR),
+                selected.get(Calendar.MONTH),
+                1
+        );
+        refreshScheduleView();
+    }
+
+    private void moveScheduleMonth(int monthOffset) {
+        Calendar selected = TaskDateUtils.calendarForDue(selectedScheduleDate);
+        int preferredDay = selected == null
+                ? 1
+                : selected.get(Calendar.DAY_OF_MONTH);
+
+        visibleMonth.add(Calendar.MONTH, monthOffset);
+        visibleMonth.set(Calendar.DAY_OF_MONTH, 1);
+
+        Calendar nextSelection = (Calendar) visibleMonth.clone();
+        nextSelection.set(
+                Calendar.DAY_OF_MONTH,
+                Math.min(
+                        preferredDay,
+                        nextSelection.getActualMaximum(Calendar.DAY_OF_MONTH)
+                )
+        );
+
+        selectedScheduleDate = TaskDateUtils.toStorageDate(
+                nextSelection.get(Calendar.YEAR),
+                nextSelection.get(Calendar.MONTH),
+                nextSelection.get(Calendar.DAY_OF_MONTH)
+        );
+        refreshScheduleView();
+    }
+
+    private void refreshScheduleView() {
+        if (calendarMonthAdapter == null || scheduleTaskAdapter == null) {
+            return;
+        }
+
+        binding.tvMonthTitle.setText(
+                new SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+                        .format(visibleMonth.getTime())
+        );
+
+        calendarMonthAdapter.submitMonth(
+                visibleMonth,
+                tasks,
+                selectedScheduleDate
+        );
+        scheduleTaskAdapter.submitTasks(tasks, selectedScheduleDate);
+
+        Calendar selected = TaskDateUtils.calendarForDue(selectedScheduleDate);
+        if (selected != null) {
+            binding.tvSelectedDate.setText(
+                    new SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
+                            .format(selected.getTime())
+            );
+        } else {
+            binding.tvSelectedDate.setText("");
+        }
+
+        int count = scheduleTaskAdapter.getTaskCount();
+        binding.tvSelectedTaskCount.setText(
+                getResources().getQuantityString(
+                        R.plurals.scheduled_task_count,
+                        count,
+                        count
+                )
+        );
+        binding.tvNoScheduledTasks.setVisibility(
+                count == 0 ? View.VISIBLE : View.GONE
+        );
+        binding.rvScheduleTasks.setVisibility(
+                count == 0 ? View.GONE : View.VISIBLE
+        );
     }
 
     private void showConnectionError() {
@@ -387,6 +534,7 @@ public class MainActivity extends AppCompatActivity
         stopListeningForTasks();
         tasks.clear();
         taskAdapter.submitTasks(tasks);
+        refreshScheduleView();
         initialStateReady = false;
         startListeningForTasks(user);
     }
@@ -535,6 +683,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onError(@NonNull Exception exception) {
                 taskAdapter.submitTasks(tasks);
+                refreshScheduleView();
                 Toast.makeText(
                         MainActivity.this,
                         R.string.update_task_error,

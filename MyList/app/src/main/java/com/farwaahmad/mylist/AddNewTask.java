@@ -1,7 +1,5 @@
 package com.farwaahmad.mylist;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
@@ -22,6 +20,8 @@ import com.farwaahmad.mylist.databinding.AddTaskLayoutBinding;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 
 import java.util.Calendar;
 
@@ -52,6 +52,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        getParentFragmentManager().setFragmentResultListener("newTaskDate", getViewLifecycleOwner(), (key, result) -> {
+            dueDate = result.getString(TaskDatePicker.RESULT, "");
+            updateDueDateUi();
+        });
         binding.tvSheetTitle.setText(R.string.new_task);
         binding.btnSave.setText(R.string.add_task);
 
@@ -163,29 +167,16 @@ public class AddNewTask extends BottomSheetDialogFragment {
         }
     }
 
+    private void hideTaskKeyboard() {
+        if (binding == null) return;
+        InputMethodManager keyboard = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        keyboard.hideSoftInputFromWindow(binding.etTaskText.getWindowToken(), 0);
+        binding.etTaskText.clearFocus();
+    }
+
     private void showDatePicker() {
-        Calendar calendar = TaskDateUtils.calendarForDue(dueDate);
-        if (calendar == null) {
-            calendar = Calendar.getInstance();
-        }
-
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                requireContext(),
-                (picker, selectedYear, selectedMonth, dayOfMonth) -> {
-                    dueDate = TaskDateUtils.toStorageDate(
-                            selectedYear,
-                            selectedMonth,
-                            dayOfMonth
-                    );
-                    updateDueDateUi();
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        datePickerDialog.setOnCancelListener(dialog -> updateDueDateUi());
-        datePickerDialog.show();
+        hideTaskKeyboard();
+        TaskDatePicker.show(getParentFragmentManager(), "newTaskDate", dueDate);
     }
 
     private void showTimePicker() {
@@ -198,17 +189,30 @@ public class AddNewTask extends BottomSheetDialogFragment {
             time = Calendar.getInstance();
         }
 
-        TimePickerDialog timePickerDialog = new TimePickerDialog(
-                requireContext(),
-                (picker, hourOfDay, minute) -> {
-                    dueTime = TaskDateUtils.toStorageTime(hourOfDay, minute);
-                    updateDueTimeUi();
-                },
-                time.get(Calendar.HOUR_OF_DAY),
-                time.get(Calendar.MINUTE),
-                android.text.format.DateFormat.is24HourFormat(requireContext())
-        );
-        timePickerDialog.show();
+        int timeFormat = android.text.format.DateFormat.is24HourFormat(requireContext())
+                ? TimeFormat.CLOCK_24H
+                : TimeFormat.CLOCK_12H;
+
+        hideTaskKeyboard();
+        MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                .setTitleText(R.string.pick_time)
+                .setTimeFormat(timeFormat)
+                .setInputMode(MaterialTimePicker.INPUT_MODE_CLOCK)
+                .setHour(time.get(Calendar.HOUR_OF_DAY))
+                .setMinute(time.get(Calendar.MINUTE))
+                .build();
+
+        timePicker.addOnPositiveButtonClickListener(view -> {
+            if (binding == null) {
+                return;
+            }
+            dueTime = TaskDateUtils.toStorageTime(
+                    timePicker.getHour(),
+                    timePicker.getMinute()
+            );
+            updateDueTimeUi();
+        });
+        timePicker.show(getParentFragmentManager(), "MyListTimePicker");
     }
 
     private void updateDueDateUi() {

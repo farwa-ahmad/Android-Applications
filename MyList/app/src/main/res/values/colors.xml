@@ -12,11 +12,14 @@
     <color name="secondary">#3a2c51</color>
     <color name="edit_color">#e6792f</color>
     <color name="delete_color">#C83E4D</color>
-    <color name="due_text">#6B6472</color>
-    <color name="dark_gray">#77727C</color>
+    <color name="due_text">#5F5868</color>
+    <color name="dark_gray">#625D68</color>
+    <color name="task_circle_unchecked">#AAA5AF</color>
     <color name="status_pill_surface">#E6424247</color>
     <color name="task_divider">#18000000</color>
     <color name="account_button_surface">#D9FFFFFF</color>
     <color name="account_button_stroke">#263A2C51</color>
+    <color name="view_toggle_track_surface">#1FFFFFFF</color>
+    <color name="view_toggle_selected_surface">#F2FFFFFF</color>
     <color name="transparent">#00000000</color>
 </resources>

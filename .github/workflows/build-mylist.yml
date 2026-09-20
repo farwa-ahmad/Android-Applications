@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - feature/schedule-view
     paths:
       - "MyList/**"
       - ".github/workflows/build-mylist.yml"

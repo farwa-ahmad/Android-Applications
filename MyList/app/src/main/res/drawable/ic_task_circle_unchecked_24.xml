@@ -6,6 +6,6 @@
     <path
         android:fillColor="@android:color/transparent"
         android:pathData="M12,2A10,10 0,1 1,12,22A10,10 0,1 1,12,2"
-        android:strokeColor="@color/due_text"
+        android:strokeColor="@color/task_circle_unchecked"
         android:strokeWidth="1.8" />
 </vector>
