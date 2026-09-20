@@ -6,7 +6,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -427,19 +426,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onDeleteTaskRequested(@NonNull TaskModel task, int adapterPosition) {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.delete_task_title)
-                .setMessage(R.string.delete_task_message)
-                .setPositiveButton(R.string.yes, (dialog, which) ->
-                        onDeleteTask(task, adapterPosition)
-                )
-                .setNegativeButton(R.string.no, null)
-                .show();
-    }
-
-    @Override
-    public void onDeleteTask(@NonNull TaskModel task, int adapterPosition) {
+    public void onDeleteTask(@NonNull TaskModel task) {
         if (taskRepository == null) {
             return;
         }
@@ -451,7 +438,6 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onError(@NonNull Exception exception) {
-                taskAdapter.restoreItem(adapterPosition);
                 Toast.makeText(
                         MainActivity.this,
                         R.string.delete_task_error,
