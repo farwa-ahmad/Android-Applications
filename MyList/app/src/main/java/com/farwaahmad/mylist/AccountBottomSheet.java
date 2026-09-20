@@ -14,7 +14,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.farwaahmad.mylist.databinding.AccountBottomSheetBinding;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -130,7 +130,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             binding.btnExistingAccount.setEnabled(true);
             binding.tvExistingAccountHint.setText(
                     hasTasks
-                            ? R.string.restore_blocked_with_tasks
+                            ? R.string.merge_existing_hint
                             : R.string.restore_existing_hint
             );
         } else {
@@ -160,19 +160,6 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void showCredentialForm(int mode) {
-        if (mode == MODE_RESTORE && hasTasks) {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle(R.string.protect_my_tasks)
-                    .setMessage(R.string.restore_blocked_with_tasks)
-                    .setPositiveButton(
-                            R.string.protect_my_tasks,
-                            (dialog, which) -> showCredentialForm(MODE_BACKUP)
-                    )
-                    .setNegativeButton(R.string.cancel, null)
-                    .show();
-            return;
-        }
-
         formMode = mode;
         setAccountSummaryVisible(false);
         binding.anonymousChooser.setVisibility(View.GONE);
@@ -188,7 +175,11 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             binding.btnCredentialsAction.setText(R.string.protect_my_tasks);
         } else {
             binding.tvFormTitle.setText(R.string.sign_in);
-            binding.tvFormDescription.setText(R.string.restore_form_description);
+            binding.tvFormDescription.setText(
+                    hasTasks
+                            ? R.string.merge_form_description
+                            : R.string.restore_form_description
+            );
             binding.btnCredentialsAction.setText(R.string.sign_in);
         }
 
@@ -274,7 +265,9 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
 
                     Toast.makeText(
                             requireContext(),
-                            R.string.restore_complete,
+                            hasTasks
+                                    ? R.string.restore_merge_complete
+                                    : R.string.restore_complete,
                             Toast.LENGTH_SHORT
                     ).show();
                     dismiss();
@@ -371,7 +364,10 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void confirmSignOut() {
-        new AlertDialog.Builder(requireContext())
+        new MaterialAlertDialogBuilder(
+                requireContext(),
+                R.style.ThemeOverlay_MyList_AppDialog
+        )
                 .setTitle(R.string.sign_out)
                 .setMessage(R.string.sign_out_confirmation)
                 .setPositiveButton(R.string.sign_out, (dialog, which) -> {
@@ -423,7 +419,10 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
         }
 
         String finalPassword = password;
-        new AlertDialog.Builder(requireContext())
+        new MaterialAlertDialogBuilder(
+                requireContext(),
+                R.style.ThemeOverlay_MyList_AppDialog
+        )
                 .setTitle(
                         isAnonymous
                                 ? R.string.delete_my_data

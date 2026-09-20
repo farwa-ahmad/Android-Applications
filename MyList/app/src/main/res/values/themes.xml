@@ -12,13 +12,17 @@
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
-    <style name="ThemeOverlay.MyList.DatePickerDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyList.DatePickerDialog</item>
+    <style name="ThemeOverlay.MyList.AppDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyList.AppDialog</item>
     </style>
 
-    <style name="ShapeAppearanceOverlay.MyList.DatePickerDialog" parent="">
+    <style name="ShapeAppearanceOverlay.MyList.AppDialog" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">20dp</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <style name="ThemeOverlay.MyList.DatePickerDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyList.AppDialog</item>
     </style>
 
     <style name="Theme.MyList.Starting" parent="Theme.SplashScreen">

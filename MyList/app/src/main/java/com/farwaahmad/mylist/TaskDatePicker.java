@@ -9,7 +9,6 @@ import android.widget.NumberPicker;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.content.Context;
 import android.view.WindowManager;
@@ -108,7 +107,10 @@ public class TaskDatePicker extends DialogFragment {
         years.setContentDescription(getString(R.string.calendar_year));
         row.addView(months, new LinearLayout.LayoutParams(0, -2, 1));
         row.addView(years, new LinearLayout.LayoutParams(0, -2, 1));
-        new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.choose_month_year)
+        new MaterialAlertDialogBuilder(
+                requireContext(),
+                R.style.ThemeOverlay_MyList_AppDialog
+        ).setTitle(R.string.choose_month_year)
                 .setView(row).setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok, (d, w) -> {
                     month.set(Calendar.DAY_OF_MONTH, 1);

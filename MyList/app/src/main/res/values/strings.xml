@@ -91,6 +91,9 @@
     <string name="password">Password</string>
     <string name="password_to_delete">Password required to delete account</string>
     <string name="restore_existing_hint">Sign in to restore your protected tasks.</string>
+    <string name="merge_existing_hint">Sign in and add these tasks to your existing account.</string>
+    <string name="merge_form_description">Sign in to combine these tasks with the tasks already saved to that account.</string>
+    <string name="restore_merge_complete">Signed in. Your tasks were merged.</string>
     <string name="restore_blocked_with_tasks">Protect this task list first, then you can sign in to another account.</string>
     <string name="backup_complete">Your tasks are now protected.</string>
     <string name="backup_complete_verification_sent">Your tasks are protected. Check your inbox to verify your email.</string>

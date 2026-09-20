@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.farwaahmad.mylist.model.TaskModel;
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
@@ -25,6 +26,7 @@ public class TaskRepository {
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
     private static final int DELETE_BATCH_SIZE = 400;
+    private static final int MERGE_BATCH_SIZE = 400;
 
     private final FirebaseFirestore firestore;
     private final String userId;
@@ -173,6 +175,76 @@ public class TaskRepository {
         tasks().document(id)
                 .set(restored)
                 .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void mergeTasks(@NonNull String sourceUserId,
+                           @NonNull List<TaskModel> sourceTasks,
+                           @NonNull OperationCallback callback) {
+        if (sourceTasks.isEmpty()) {
+            callback.onSuccess();
+            return;
+        }
+
+        if (sourceUserId.trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Source account is missing."));
+            return;
+        }
+
+        mergeTaskBatch(sourceUserId, sourceTasks, 0, callback);
+    }
+
+    private void mergeTaskBatch(@NonNull String sourceUserId,
+                                @NonNull List<TaskModel> sourceTasks,
+                                int start,
+                                @NonNull OperationCallback callback) {
+        if (start >= sourceTasks.size()) {
+            callback.onSuccess();
+            return;
+        }
+
+        int end = Math.min(start + MERGE_BATCH_SIZE, sourceTasks.size());
+        WriteBatch batch = firestore.batch();
+
+        for (int index = start; index < end; index++) {
+            TaskModel sourceTask = sourceTasks.get(index);
+            String sourceTaskId = sourceTask.getId();
+            String taskText = sourceTask.getTask();
+
+            if (sourceTaskId == null || sourceTaskId.trim().isEmpty()
+                    || taskText == null || taskText.trim().isEmpty()) {
+                callback.onError(new IllegalArgumentException(
+                        "A guest task is missing its identity."
+                ));
+                return;
+            }
+
+            Map<String, Object> merged = new HashMap<>();
+            merged.put("task", taskText);
+            merged.put("due", sourceTask.getDue() == null ? "" : sourceTask.getDue());
+
+            String dueTime = sourceTask.getDueTime();
+            if (dueTime != null && !dueTime.isEmpty()) {
+                merged.put("dueTime", dueTime);
+            }
+
+            merged.put("status", sourceTask.getStatus());
+            merged.put(
+                    "time",
+                    sourceTask.getTime() != null
+                            ? sourceTask.getTime()
+                            : Timestamp.now()
+            );
+
+            // Stable IDs make the migration idempotent: retrying a merge
+            // updates the same imported task instead of creating duplicates.
+            String mergedTaskId = "guest_" + sourceUserId + "_" + sourceTaskId;
+            batch.set(tasks().document(mergedTaskId), merged);
+        }
+
+        batch.commit()
+                .addOnSuccessListener(unused ->
+                        mergeTaskBatch(sourceUserId, sourceTasks, end, callback))
                 .addOnFailureListener(callback::onError);
     }
 

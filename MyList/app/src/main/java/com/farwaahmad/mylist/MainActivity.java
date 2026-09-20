@@ -814,24 +814,51 @@ public class MainActivity extends AppCompatActivity
     public void onRestoreRequested(@NonNull String email,
                                    @NonNull String password,
                                    @NonNull AccountBottomSheet.ActionCallback callback) {
-        if (!tasks.isEmpty()) {
-            callback.onError(new IllegalStateException(
-                    getString(R.string.restore_blocked_with_tasks)
-            ));
-            return;
-        }
+        FirebaseUser sourceUser = authRepository.getCurrentUser();
+        String sourceUserId = sourceUser != null && sourceUser.isAnonymous()
+                ? sourceUser.getUid()
+                : "";
+        List<TaskModel> guestTasks = new ArrayList<>(tasks);
 
         stopListeningForTasks();
         authRepository.restoreEmailAccount(email, password, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(@NonNull FirebaseUser user) {
-                resetForIdentityChange(user);
-                callback.onSuccess();
+                if (guestTasks.isEmpty() || sourceUserId.isEmpty()) {
+                    resetForIdentityChange(user);
+                    callback.onSuccess();
+                    return;
+                }
+
+                TaskRepository targetRepository = new TaskRepository(user.getUid());
+                targetRepository.mergeTasks(
+                        sourceUserId,
+                        guestTasks,
+                        new TaskRepository.OperationCallback() {
+                            @Override
+                            public void onSuccess() {
+                                resetForIdentityChange(user);
+                                callback.onSuccess();
+                            }
+
+                            @Override
+                            public void onError(@NonNull Exception exception) {
+                                // The account sign-in succeeded, so keep the app
+                                // usable on that identity even if a merge write fails.
+                                resetForIdentityChange(user);
+                                callback.onError(exception);
+                            }
+                        }
+                );
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
-                ensureSignedIn();
+                if (sourceUser != null) {
+                    startListeningForTasks(sourceUser);
+                } else {
+                    ensureSignedIn();
+                }
                 callback.onError(exception);
             }
         });

@@ -68,16 +68,9 @@ public class AuthRepository {
     public void restoreEmailAccount(@NonNull String email,
                                     @NonNull String password,
                                     @NonNull AuthCallback callback) {
-        FirebaseUser currentUser = auth.getCurrentUser();
-
-        if (currentUser != null && currentUser.isAnonymous()) {
-            currentUser.delete()
-                    .addOnSuccessListener(unused -> signInWithEmail(email, password, callback))
-                    .addOnFailureListener(callback::onError);
-            return;
-        }
-
-        auth.signOut();
+        // Sign-in itself switches FirebaseAuth to the existing account.
+        // Do not delete the anonymous user first: invalid credentials should
+        // leave the guest session and its task data recoverable.
         signInWithEmail(email, password, callback);
     }
 
