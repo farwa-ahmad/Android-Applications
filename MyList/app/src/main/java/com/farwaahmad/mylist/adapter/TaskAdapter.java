@@ -211,7 +211,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         float contentAlpha = completed && !editing ? 0.62f : 1f;
         taskHolder.taskTitle.setAlpha(contentAlpha);
         taskHolder.dueDateText.setAlpha(contentAlpha);
-        taskHolder.taskCheckBox.setAlpha(contentAlpha);
+        // Keep both circle outlines equally visible; fade only completed text.
+        taskHolder.taskCheckBox.setAlpha(1f);
 
         bindTaskTitle(taskHolder, task, completed, editing);
 
