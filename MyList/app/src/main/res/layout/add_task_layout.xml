@@ -109,18 +109,6 @@
             app:strokeColor="@color/quick_date_stroke"
             app:strokeWidth="1dp" />
 
-        <ImageButton
-            android:id="@+id/btnClearDueDate"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="2dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/remove_due_date"
-            android:padding="9dp"
-            android:src="@drawable/ic_close_24"
-            android:tint="@color/dark_gray"
-            android:visibility="gone" />
-
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton

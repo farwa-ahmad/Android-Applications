@@ -70,19 +70,30 @@ public class AddNewTask extends BottomSheetDialogFragment {
         });
 
         binding.btnToday.setOnClickListener(v -> {
-            dueDate = storageDateForOffset(0);
+            String today = storageDateForOffset(0);
+            dueDate = today.equals(dueDate) ? "" : today;
             updateDueDateUi();
         });
 
         binding.btnTomorrow.setOnClickListener(v -> {
-            dueDate = storageDateForOffset(1);
+            String tomorrow = storageDateForOffset(1);
+            dueDate = tomorrow.equals(dueDate) ? "" : tomorrow;
             updateDueDateUi();
         });
 
-        binding.btnPickDate.setOnClickListener(v -> showDatePicker());
-        binding.btnClearDueDate.setOnClickListener(v -> {
-            dueDate = "";
-            updateDueDateUi();
+        binding.btnPickDate.setOnClickListener(v -> {
+            String today = storageDateForOffset(0);
+            String tomorrow = storageDateForOffset(1);
+            boolean customDateSelected = !dueDate.isEmpty()
+                    && !today.equals(dueDate)
+                    && !tomorrow.equals(dueDate);
+
+            if (customDateSelected) {
+                dueDate = "";
+                updateDueDateUi();
+            } else {
+                showDatePicker();
+            }
         });
         binding.btnSave.setOnClickListener(v -> saveTask());
 
@@ -151,7 +162,6 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     private void updateDueDateUi() {
         boolean hasDueDate = !dueDate.isEmpty();
-        binding.btnClearDueDate.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
 
         String today = storageDateForOffset(0);
         String tomorrow = storageDateForOffset(1);
@@ -238,7 +248,6 @@ public class AddNewTask extends BottomSheetDialogFragment {
         binding.btnToday.setEnabled(!saving);
         binding.btnTomorrow.setEnabled(!saving);
         binding.btnPickDate.setEnabled(!saving);
-        binding.btnClearDueDate.setEnabled(!saving);
         binding.etTaskText.setEnabled(!saving);
         binding.btnSave.setText(saving ? R.string.saving : R.string.add_task);
     }

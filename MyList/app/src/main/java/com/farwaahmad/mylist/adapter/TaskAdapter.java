@@ -331,20 +331,30 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         updateInlineSaveButton(holder);
 
         holder.editToday.setOnClickListener(v -> {
-            draftDueDate = storageDateForOffset(0);
+            String today = storageDateForOffset(0);
+            draftDueDate = today.equals(draftDueDate) ? "" : today;
             bindDraftDateControls(holder);
         });
 
         holder.editTomorrow.setOnClickListener(v -> {
-            draftDueDate = storageDateForOffset(1);
+            String tomorrow = storageDateForOffset(1);
+            draftDueDate = tomorrow.equals(draftDueDate) ? "" : tomorrow;
             bindDraftDateControls(holder);
         });
 
-        holder.editPickDate.setOnClickListener(v -> showDatePicker(holder, task));
+        holder.editPickDate.setOnClickListener(v -> {
+            String today = storageDateForOffset(0);
+            String tomorrow = storageDateForOffset(1);
+            boolean customDateSelected = !draftDueDate.isEmpty()
+                    && !today.equals(draftDueDate)
+                    && !tomorrow.equals(draftDueDate);
 
-        holder.editClearDate.setOnClickListener(v -> {
-            draftDueDate = "";
-            bindDraftDateControls(holder);
+            if (customDateSelected) {
+                draftDueDate = "";
+                bindDraftDateControls(holder);
+            } else {
+                showDatePicker(holder, task);
+            }
         });
 
         holder.editCancel.setOnClickListener(v -> cancelInlineEdit(holder, task));
@@ -366,7 +376,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editPickDate.setText(
                 isCustomDate ? compactDate(draftDueDate) : context.getString(R.string.pick_date)
         );
-        holder.editClearDate.setVisibility(hasDueDate ? View.VISIBLE : View.INVISIBLE);
     }
 
     private void showDatePicker(@NonNull TaskViewHolder holder,
@@ -511,7 +520,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editToday.setEnabled(enabled);
         holder.editTomorrow.setEnabled(enabled);
         holder.editPickDate.setEnabled(enabled);
-        holder.editClearDate.setEnabled(enabled);
         holder.editCancel.setEnabled(enabled);
         holder.editSave.setEnabled(enabled && !draftTaskText.trim().isEmpty());
         holder.editSave.setText(
@@ -915,7 +923,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final MaterialButton editToday;
         final MaterialButton editTomorrow;
         final MaterialButton editPickDate;
-        final ImageButton editClearDate;
         final MaterialButton editCancel;
         final MaterialButton editSave;
         final View divider;
@@ -934,7 +941,6 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             editToday = itemView.findViewById(R.id.btnEditToday);
             editTomorrow = itemView.findViewById(R.id.btnEditTomorrow);
             editPickDate = itemView.findViewById(R.id.btnEditPickDate);
-            editClearDate = itemView.findViewById(R.id.btnEditClearDate);
             editCancel = itemView.findViewById(R.id.btnEditCancel);
             editSave = itemView.findViewById(R.id.btnEditSave);
             divider = itemView.findViewById(R.id.taskDivider);

@@ -162,16 +162,6 @@
                 android:gravity="center_vertical|end"
                 android:orientation="horizontal">
 
-                <ImageButton
-                    android:id="@+id/btnEditClearDate"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/remove_due_date"
-                    android:padding="9dp"
-                    android:src="@drawable/ic_close_24"
-                    android:tint="@color/dark_gray" />
-
                 <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
