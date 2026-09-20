@@ -85,14 +85,27 @@ public class MainActivity extends AppCompatActivity
 
         WindowCompat.getInsetsController(getWindow(), binding.getRoot())
                 .setAppearanceLightStatusBars(true);
+
+        int taskListBaseBottomPadding = binding.rvTasks.getPaddingBottom();
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (view, windowInsets) -> {
             Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+
             view.setPadding(
                     view.getPaddingLeft(),
                     systemBars.top,
                     view.getPaddingRight(),
                     systemBars.bottom
             );
+
+            int keyboardInset = Math.max(0, ime.bottom - systemBars.bottom);
+            binding.rvTasks.setPadding(
+                    binding.rvTasks.getPaddingLeft(),
+                    binding.rvTasks.getPaddingTop(),
+                    binding.rvTasks.getPaddingRight(),
+                    taskListBaseBottomPadding + keyboardInset
+            );
+
             return windowInsets;
         });
 

@@ -4,6 +4,7 @@ import com.farwaahmad.mylist.TaskDatePicker;
 import com.farwaahmad.mylist.TaskTimePicker;
 import androidx.fragment.app.FragmentActivity;
 import android.content.Context;
+import android.graphics.Rect;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
@@ -321,6 +322,21 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         holder.taskTitle,
                         InputMethodManager.SHOW_IMPLICIT
                 );
+
+                holder.taskTitle.postDelayed(() -> {
+                    if (!taskId.equals(editingTaskId)
+                            || holder.getBindingAdapterPosition() == RecyclerView.NO_POSITION) {
+                        return;
+                    }
+
+                    Rect textBounds = new Rect(
+                            0,
+                            0,
+                            holder.taskTitle.getWidth(),
+                            holder.taskTitle.getHeight()
+                    );
+                    holder.taskTitle.requestRectangleOnScreen(textBounds, false);
+                }, 250L);
             });
         }
     }

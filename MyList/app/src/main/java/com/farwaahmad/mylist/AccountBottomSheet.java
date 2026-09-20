@@ -127,7 +127,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
             binding.deletePasswordInputLayout.setVisibility(View.GONE);
             binding.btnDeleteData.setText(R.string.delete_my_data);
 
-            binding.btnExistingAccount.setEnabled(!hasTasks);
+            binding.btnExistingAccount.setEnabled(true);
             binding.tvExistingAccountHint.setText(
                     hasTasks
                             ? R.string.restore_blocked_with_tasks
@@ -161,11 +161,15 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
 
     private void showCredentialForm(int mode) {
         if (mode == MODE_RESTORE && hasTasks) {
-            Toast.makeText(
-                    requireContext(),
-                    R.string.restore_blocked_with_tasks,
-                    Toast.LENGTH_LONG
-            ).show();
+            new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.protect_my_tasks)
+                    .setMessage(R.string.restore_blocked_with_tasks)
+                    .setPositiveButton(
+                            R.string.protect_my_tasks,
+                            (dialog, which) -> showCredentialForm(MODE_BACKUP)
+                    )
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
             return;
         }
 
@@ -456,7 +460,7 @@ public class AccountBottomSheet extends BottomSheetDialogFragment {
     private void setBusy(boolean busy) {
         binding.accountProgress.setVisibility(busy ? View.VISIBLE : View.GONE);
         binding.btnProtectTasks.setEnabled(!busy);
-        binding.btnExistingAccount.setEnabled(!busy && !hasTasks);
+        binding.btnExistingAccount.setEnabled(!busy);
         binding.btnCredentialsAction.setEnabled(!busy);
         binding.btnBackCredentials.setEnabled(!busy);
         binding.btnForgotPassword.setEnabled(!busy);
