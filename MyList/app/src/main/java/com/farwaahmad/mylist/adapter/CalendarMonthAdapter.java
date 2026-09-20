@@ -162,9 +162,9 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         boolean selected = cell.storageDate.equals(selectedDate);
         if (selected) {
             dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_selected);
-        } else if (cell.today) {
-            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today);
         } else {
+            // Today is indicated by bold text only. The outlined tile is reserved
+            // for the user's selected date so the two states are immediately distinct.
             dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
         }
 
