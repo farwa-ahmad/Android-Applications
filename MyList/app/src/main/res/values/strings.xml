@@ -133,4 +133,9 @@
         <item quantity="one">%1$d task</item>
         <item quantity="other">%1$d tasks</item>
     </plurals>
+    <string name="choose_date">Choose date</string>
+    <string name="set_date">Set date</string>
+    <string name="choose_month_year">Choose month and year</string>
+    <string name="calendar_month">Month</string>
+    <string name="calendar_year">Year</string>
 </resources>

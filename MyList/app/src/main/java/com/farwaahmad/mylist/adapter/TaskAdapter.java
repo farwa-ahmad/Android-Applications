@@ -1,6 +1,7 @@
 package com.farwaahmad.mylist.adapter;
 
-import android.app.DatePickerDialog;
+import com.farwaahmad.mylist.TaskDatePicker;
+import androidx.fragment.app.FragmentActivity;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.graphics.Paint;
@@ -438,25 +439,14 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return;
         }
 
-        Calendar calendar = TaskDateUtils.calendarForDue(draftDueDate);
-        if (calendar == null) {
-            calendar = Calendar.getInstance();
-        }
-
-        DatePickerDialog dialog = new DatePickerDialog(
-                context,
-                (picker, year, month, dayOfMonth) -> {
-                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
-                        return;
-                    }
-                    draftDueDate = TaskDateUtils.toStorageDate(year, month, dayOfMonth);
-                    bindDraftDateControls(holder);
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-        dialog.show();
+        FragmentActivity activity = (FragmentActivity) context;
+        activity.getSupportFragmentManager().setFragmentResultListener("editTaskDate", activity, (key, result) -> {
+            if (!task.getId().equals(editingTaskId)) return;
+            draftDueDate = result.getString(TaskDatePicker.RESULT, "");
+            int position = getPositionForTaskId(task.getId());
+            if (position != RecyclerView.NO_POSITION) notifyItemChanged(position);
+        });
+        TaskDatePicker.show(activity.getSupportFragmentManager(), "editTaskDate", draftDueDate);
     }
 
     private void showTimePicker(@NonNull TaskViewHolder holder,

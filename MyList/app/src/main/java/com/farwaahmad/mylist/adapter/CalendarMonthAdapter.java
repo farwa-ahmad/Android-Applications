@@ -30,9 +30,15 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
     private final List<Cell> cells = new ArrayList<>();
     private final OnDateSelectedListener listener;
     private String selectedDate = "";
+    private final boolean showTaskCounts;
 
     public CalendarMonthAdapter(@NonNull OnDateSelectedListener listener) {
+        this(listener, true);
+    }
+
+    public CalendarMonthAdapter(@NonNull OnDateSelectedListener listener, boolean showTaskCounts) {
         this.listener = listener;
+        this.showTaskCounts = showTaskCounts;
     }
 
     public void submitMonth(@NonNull Calendar month,
@@ -151,7 +157,9 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                 cell.today ? Typeface.BOLD : Typeface.NORMAL
         );
 
-        if (cell.taskCount > 0) {
+        if (!showTaskCounts) {
+            dayHolder.taskCount.setVisibility(View.GONE);
+        } else if (cell.taskCount > 0) {
             dayHolder.taskCount.setVisibility(View.VISIBLE);
             dayHolder.taskCount.setText(cell.taskCount > 9 ? "9+" : String.valueOf(cell.taskCount));
         } else {
@@ -162,11 +170,16 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         boolean selected = cell.storageDate.equals(selectedDate);
         if (selected) {
             dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_selected);
+        } else if (cell.today) {
+            dayHolder.itemView.setBackgroundResource(R.drawable.bg_calendar_day_today);
         } else {
-            // Today is indicated by bold text only. The outlined tile is reserved
-            // for the user's selected date so the two states are immediately distinct.
             dayHolder.itemView.setBackgroundResource(android.R.color.transparent);
         }
+        dayHolder.itemView.setSelected(selected);
+        dayHolder.dayNumber.setTextColor(androidx.core.content.ContextCompat.getColor(
+                holder.itemView.getContext(), selected ? R.color.white : R.color.secondary));
+        dayHolder.taskCount.setTextColor(androidx.core.content.ContextCompat.getColor(
+                holder.itemView.getContext(), selected ? R.color.white : R.color.due_text));
 
         Calendar date = TaskDateUtils.calendarForDue(cell.storageDate);
         if (date != null) {

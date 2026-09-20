@@ -20,12 +20,10 @@ import com.farwaahmad.mylist.databinding.AddTaskLayoutBinding;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
 
 import java.util.Calendar;
-import java.util.TimeZone;
 
 public class AddNewTask extends BottomSheetDialogFragment {
 
@@ -54,6 +52,10 @@ public class AddNewTask extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        getParentFragmentManager().setFragmentResultListener("newTaskDate", getViewLifecycleOwner(), (key, result) -> {
+            dueDate = result.getString(TaskDatePicker.RESULT, "");
+            updateDueDateUi();
+        });
         binding.tvSheetTitle.setText(R.string.new_task);
         binding.btnSave.setText(R.string.add_task);
 
@@ -166,45 +168,7 @@ public class AddNewTask extends BottomSheetDialogFragment {
     }
 
     private void showDatePicker() {
-        Calendar calendar = TaskDateUtils.calendarForDue(dueDate);
-        if (calendar == null) {
-            calendar = Calendar.getInstance();
-        }
-
-        Calendar selectionUtc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        selectionUtc.clear();
-        selectionUtc.set(
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
-                .setTitleText(R.string.pick_date)
-                .setInputMode(MaterialDatePicker.INPUT_MODE_CALENDAR)
-                .setSelection(selectionUtc.getTimeInMillis())
-                .build();
-
-        datePicker.addOnPositiveButtonClickListener(selection -> {
-            if (selection == null || binding == null) {
-                return;
-            }
-
-            Calendar selectedUtc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-            selectedUtc.setTimeInMillis(selection);
-            dueDate = TaskDateUtils.toStorageDate(
-                    selectedUtc.get(Calendar.YEAR),
-                    selectedUtc.get(Calendar.MONTH),
-                    selectedUtc.get(Calendar.DAY_OF_MONTH)
-            );
-            updateDueDateUi();
-        });
-        datePicker.addOnDismissListener(dialog -> {
-            if (binding != null) {
-                updateDueDateUi();
-            }
-        });
-        datePicker.show(getParentFragmentManager(), "MyListDatePicker");
+        TaskDatePicker.show(getParentFragmentManager(), "newTaskDate", dueDate);
     }
 
     private void showTimePicker() {
