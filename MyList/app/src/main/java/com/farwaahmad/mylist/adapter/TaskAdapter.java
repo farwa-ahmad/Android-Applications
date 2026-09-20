@@ -796,15 +796,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return rows.get(position).task;
     }
 
-    public void requestDelete(int position) {
-        TaskModel task = getTaskAt(position);
-        if (task != null) {
-            requestDelete(task, position);
-        }
-    }
-
-    public void requestDelete(@NonNull TaskModel task, int swipedPosition) {
-        actionListener.onDeleteTask(task, swipedPosition);
+    public void requestDelete(@NonNull TaskModel task) {
+        actionListener.onDeleteTask(task);
     }
 
     public void requestEdit(int position) {
@@ -1004,9 +997,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                      @NonNull String dueTime,
                                      @NonNull EditSaveCallback callback);
 
-        void onDeleteTaskRequested(@NonNull TaskModel task, int adapterPosition);
-
-        void onDeleteTask(@NonNull TaskModel task, int adapterPosition);
+        void onDeleteTask(@NonNull TaskModel task);
 
         void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete);
     }
