@@ -61,8 +61,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         latestTasks.clear();
         latestTasks.addAll(tasks);
 
+        String editingTaskId = editState.getEditingTaskId();
         if (editingTaskId != null && !containsTask(editingTaskId)) {
-            clearInlineEditState();
+            editState.clear();
         }
 
         rebuildRows();
@@ -218,7 +219,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         holder.taskTitle.setError(null);
         holder.taskTitle.setText(editing
-                ? draftTaskText
+                ? editState.getDraftTaskText()
                 : (task.getTask() == null ? "" : task.getTask()));
 
         int flags = holder.taskTitle.getPaintFlags();
@@ -246,8 +247,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (task.getId() != null && task.getId().equals(editingTaskId)) {
-                    draftTaskText = s == null ? "" : s.toString();
+                if (editState.isEditing(task.getId())) {
+                    editState.setDraftTaskText(s);
                     updateInlineSaveButton(holder);
                 }
             }
@@ -266,11 +267,10 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return false;
         });
 
-        if (task.getId() != null && task.getId().equals(pendingFocusTaskId)) {
+        if (editState.consumePendingFocus(task.getId())) {
             String taskId = task.getId();
-            pendingFocusTaskId = null;
             holder.taskTitle.post(() -> {
-                if (!taskId.equals(editingTaskId)
+                if (!editState.isEditing(taskId)
                         || holder.getBindingAdapterPosition() == RecyclerView.NO_POSITION) {
                     return;
                 }
@@ -284,7 +284,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 );
 
                 holder.itemView.postDelayed(() -> {
-                    if (!taskId.equals(editingTaskId)
+                    if (!editState.isEditing(taskId)
                             || holder.getBindingAdapterPosition() == RecyclerView.NO_POSITION) {
                         return;
                     }
@@ -317,55 +317,43 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editPickDate.setCheckable(true);
         holder.editPickTime.setCheckable(true);
         bindDraftDateControls(holder);
-        setInlineControlsEnabled(holder, !editSaveInProgress);
+        setInlineControlsEnabled(holder, !editState.isSaveInProgress());
         updateInlineSaveButton(holder);
 
         holder.editToday.setOnClickListener(v -> {
-            String today = storageDateForOffset(0);
-            if (today.equals(draftDueDate)) {
-                draftDueDate = "";
-                draftDueTime = "";
-            } else {
-                draftDueDate = today;
-            }
+            editState.toggleDueDate(storageDateForOffset(0));
             bindDraftDateControls(holder);
         });
 
         holder.editTomorrow.setOnClickListener(v -> {
-            String tomorrow = storageDateForOffset(1);
-            if (tomorrow.equals(draftDueDate)) {
-                draftDueDate = "";
-                draftDueTime = "";
-            } else {
-                draftDueDate = tomorrow;
-            }
+            editState.toggleDueDate(storageDateForOffset(1));
             bindDraftDateControls(holder);
         });
 
         holder.editPickDate.setOnClickListener(v -> {
-            if (showDatePicker(holder, task)) {
-                editDatePickerOpen = true;
-                bindDraftDateControls(holder);
-                holder.editPickDate.post(() -> {
-                    if (task.getId() != null
-                            && task.getId().equals(editingTaskId)
-                            && holder.getBindingAdapterPosition() != RecyclerView.NO_POSITION) {
-                        bindDraftDateControls(holder);
-                    }
-                });
-            }
-        });
-
-        holder.editPickTime.setOnClickListener(v -> {
-            if (draftDueDate.isEmpty()) {
+            if (!editState.isEditing(task.getId())) {
                 return;
             }
 
-            if (!draftDueTime.isEmpty()) {
-                draftDueTime = "";
+            hideKeyboard(holder.taskTitle);
+            boolean shown = actionListener.onTaskDatePickerRequested(
+                    editState.getDraftDueDate()
+            );
+            editState.setDatePickerOpen(shown);
+            bindDraftDateControls(holder);
+        });
+
+        holder.editPickTime.setOnClickListener(v -> {
+            if (editState.getDraftDueDate().isEmpty()) {
+                return;
+            }
+
+            if (!editState.getDraftDueTime().isEmpty()) {
+                editState.toggleTimeOff();
                 bindDraftTimeControls(holder);
             } else {
-                showTimePicker(holder, task);
+                hideKeyboard(holder.taskTitle);
+                actionListener.onTaskTimePickerRequested(editState.getDraftDueTime());
             }
         });
 
@@ -374,6 +362,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void bindDraftDateControls(@NonNull TaskViewHolder holder) {
+        String draftDueDate = editState.getDraftDueDate();
         boolean hasDueDate = !draftDueDate.isEmpty();
         String today = storageDateForOffset(0);
         String tomorrow = storageDateForOffset(1);
@@ -384,7 +373,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         holder.editToday.setChecked(isToday);
         holder.editTomorrow.setChecked(isTomorrow);
-        holder.editPickDate.setChecked(editDatePickerOpen || isCustomDate);
+        holder.editPickDate.setChecked(editState.isDatePickerOpen() || isCustomDate);
         holder.editPickDate.setText(
                 isCustomDate
                         ? TaskDateUtils.formatDateForRow(context, draftDueDate)
@@ -395,13 +384,10 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void bindDraftTimeControls(@NonNull TaskViewHolder holder) {
-        boolean hasDueDate = !draftDueDate.isEmpty();
-        if (!hasDueDate) {
-            draftDueTime = "";
-        }
-
+        boolean hasDueDate = !editState.getDraftDueDate().isEmpty();
         holder.editPickTime.setVisibility(hasDueDate ? View.VISIBLE : View.GONE);
 
+        String draftDueTime = editState.getDraftDueTime();
         boolean hasTime = !draftDueTime.isEmpty();
         holder.editPickTime.setChecked(hasTime);
         holder.editPickTime.setText(
@@ -411,76 +397,39 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         );
     }
 
-    private boolean showDatePicker(@NonNull TaskViewHolder holder,
-                                   @NonNull TaskModel task) {
-        if (task.getId() == null || !task.getId().equals(editingTaskId)) {
-            return false;
-        }
-
-        FragmentActivity activity = (FragmentActivity) context;
-        activity.getSupportFragmentManager().setFragmentResultListener(
-                "editTaskDate",
-                activity,
-                (key, result) -> {
-                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
-                        return;
-                    }
-
-                    editDatePickerOpen = false;
-                    if (result.getBoolean(TaskDatePicker.RESULT_CONFIRMED, false)) {
-                        draftDueDate = result.getString(TaskDatePicker.RESULT, draftDueDate);
-                    }
-
-                    int position = getPositionForTaskId(task.getId());
-                    if (position != RecyclerView.NO_POSITION) {
-                        notifyItemChanged(position);
-                    }
-                }
-        );
-        hideKeyboard(holder.taskTitle);
-        return TaskDatePicker.show(
-                activity.getSupportFragmentManager(),
-                "editTaskDate",
-                draftDueDate
-        );
-    }
-
-    private void showTimePicker(@NonNull TaskViewHolder holder,
-                                @NonNull TaskModel task) {
-        if (task.getId() == null
-                || !task.getId().equals(editingTaskId)
-                || draftDueDate.isEmpty()) {
+    public void onDatePickerResult(boolean confirmed,
+                                   @Nullable String selectedDate) {
+        String taskId = editState.getEditingTaskId();
+        if (taskId == null) {
             return;
         }
 
-        FragmentActivity activity = (FragmentActivity) context;
-        activity.getSupportFragmentManager().setFragmentResultListener(
-                "editTaskTime",
-                activity,
-                (key, result) -> {
-                    if (task.getId() == null || !task.getId().equals(editingTaskId)) {
-                        return;
-                    }
+        editState.setDatePickerOpen(false);
+        if (confirmed) {
+            editState.setDraftDueDate(selectedDate);
+        }
 
-                    draftDueTime = result.getString(TaskTimePicker.RESULT, "");
-                    int position = getPositionForTaskId(task.getId());
-                    if (position != RecyclerView.NO_POSITION) {
-                        notifyItemChanged(position);
-                    }
-                }
-        );
+        int position = getPositionForTaskId(taskId);
+        if (position != RecyclerView.NO_POSITION) {
+            notifyItemChanged(position);
+        }
+    }
 
-        hideKeyboard(holder.taskTitle);
-        TaskTimePicker.show(
-                context,
-                activity.getSupportFragmentManager(),
-                "editTaskTime",
-                draftDueTime
-        );
+    public void onTimePickerResult(@Nullable String selectedTime) {
+        String taskId = editState.getEditingTaskId();
+        if (taskId == null) {
+            return;
+        }
+
+        editState.setDraftDueTime(selectedTime);
+        int position = getPositionForTaskId(taskId);
+        if (position != RecyclerView.NO_POSITION) {
+            notifyItemChanged(position);
+        }
     }
 
     private void startInlineEdit(int position) {
-        if (!isTaskPosition(position) || editSaveInProgress) {
+        if (!isTaskPosition(position) || editState.isSaveInProgress()) {
             return;
         }
 
@@ -489,21 +438,12 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return;
         }
 
-        int previousPosition = editingTaskId == null
+        String previousTaskId = editState.getEditingTaskId();
+        int previousPosition = previousTaskId == null
                 ? RecyclerView.NO_POSITION
-                : getPositionForTaskId(editingTaskId);
+                : getPositionForTaskId(previousTaskId);
 
-        editingTaskId = task.getId();
-        pendingFocusTaskId = task.getId();
-        draftTaskText = task.getTask() == null ? "" : task.getTask();
-        draftDueDate = TaskDateUtils.normalizeForStorage(
-                task.getDue() == null ? "" : task.getDue()
-        );
-        draftDueTime = draftDueDate.isEmpty()
-                ? ""
-                : TaskDateUtils.normalizeTimeForStorage(task.getDueTime());
-        editDatePickerOpen = false;
-        editSaveInProgress = false;
+        editState.start(task);
         hideSwipeHint();
 
         if (previousPosition != RecyclerView.NO_POSITION && previousPosition != position) {
@@ -514,13 +454,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private void cancelInlineEdit(@NonNull TaskViewHolder holder,
                                   @NonNull TaskModel task) {
-        if (editSaveInProgress || task.getId() == null || !task.getId().equals(editingTaskId)) {
+        if (editState.isSaveInProgress() || !editState.isEditing(task.getId())) {
             return;
         }
 
         String taskId = task.getId();
         hideKeyboard(holder.taskTitle);
-        clearInlineEditState();
+        editState.clear();
 
         int position = getPositionForTaskId(taskId);
         if (position != RecyclerView.NO_POSITION) {
@@ -530,33 +470,23 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private void saveInlineEdit(@NonNull TaskViewHolder holder,
                                 @NonNull TaskModel task) {
-        if (editSaveInProgress || task.getId() == null || !task.getId().equals(editingTaskId)) {
+        if (editState.isSaveInProgress() || !editState.isEditing(task.getId())) {
             return;
         }
 
-        String taskText = draftTaskText.trim();
+        String taskText = editState.trimmedTaskText();
         if (taskText.isEmpty()) {
             holder.taskTitle.setError(context.getString(R.string.no_task_entered));
             holder.taskTitle.requestFocus();
             return;
         }
 
-        String originalText = task.getTask() == null ? "" : task.getTask().trim();
-        String originalDue = TaskDateUtils.normalizeForStorage(
-                task.getDue() == null ? "" : task.getDue()
-        );
-        String originalDueTime = originalDue.isEmpty()
-                ? ""
-                : TaskDateUtils.normalizeTimeForStorage(task.getDueTime());
-
-        if (taskText.equals(originalText)
-                && draftDueDate.equals(originalDue)
-                && draftDueTime.equals(originalDueTime)) {
+        if (!editState.hasChanges(task)) {
             cancelInlineEdit(holder, task);
             return;
         }
 
-        editSaveInProgress = true;
+        editState.setSaveInProgress(true);
         setInlineControlsEnabled(holder, false);
         updateInlineSaveButton(holder);
 
@@ -564,17 +494,17 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         actionListener.onTaskEditSaveRequested(
                 task,
                 taskText,
-                draftDueDate,
-                draftDueTime,
+                editState.getDraftDueDate(),
+                editState.getDraftDueTime(),
                 new EditSaveCallback() {
                     @Override
                     public void onSuccess() {
-                        if (!taskId.equals(editingTaskId)) {
+                        if (!editState.isEditing(taskId)) {
                             return;
                         }
 
                         hideKeyboard(holder.taskTitle);
-                        clearInlineEditState();
+                        editState.clear();
                         int position = getPositionForTaskId(taskId);
                         if (position != RecyclerView.NO_POSITION) {
                             notifyItemChanged(position);
@@ -585,11 +515,11 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
                     @Override
                     public void onError(@NonNull Exception exception) {
-                        if (!taskId.equals(editingTaskId)) {
+                        if (!editState.isEditing(taskId)) {
                             return;
                         }
 
-                        editSaveInProgress = false;
+                        editState.setSaveInProgress(false);
                         int position = getPositionForTaskId(taskId);
                         if (position != RecyclerView.NO_POSITION) {
                             notifyItemChanged(position);
@@ -606,9 +536,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.editPickDate.setEnabled(enabled);
         holder.editPickTime.setEnabled(enabled);
         holder.editCancel.setEnabled(enabled);
-        holder.editSave.setEnabled(enabled && !draftTaskText.trim().isEmpty());
+        holder.editSave.setEnabled(enabled && editState.hasValidText());
         holder.editSave.setText(
-                editSaveInProgress
+                editState.isSaveInProgress()
                         ? context.getString(R.string.saving)
                         : context.getString(R.string.save)
         );
@@ -616,26 +546,16 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private void updateInlineSaveButton(@NonNull TaskViewHolder holder) {
         holder.editSave.setEnabled(
-                !editSaveInProgress && !draftTaskText.trim().isEmpty()
+                !editState.isSaveInProgress() && editState.hasValidText()
         );
         holder.editSave.setText(
-                editSaveInProgress
+                editState.isSaveInProgress()
                         ? context.getString(R.string.saving)
                         : context.getString(R.string.save)
         );
-        if (!draftTaskText.trim().isEmpty()) {
+        if (editState.hasValidText()) {
             holder.taskTitle.setError(null);
         }
-    }
-
-    private void clearInlineEditState() {
-        editingTaskId = null;
-        pendingFocusTaskId = null;
-        draftTaskText = "";
-        draftDueDate = "";
-        draftDueTime = "";
-        editDatePickerOpen = false;
-        editSaveInProgress = false;
     }
 
     private void hideKeyboard(@NonNull View view) {
@@ -1003,6 +923,10 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void onDeleteTask(@NonNull TaskModel task);
 
         void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete);
+
+        boolean onTaskDatePickerRequested(@NonNull String initialDate);
+
+        void onTaskTimePickerRequested(@NonNull String initialTime);
     }
 
     public interface EditSaveCallback {
