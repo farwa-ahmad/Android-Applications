@@ -37,7 +37,7 @@ function taskRef(context, userId = "alice", taskId = "task-1") {
 
 before(async () => {
   testEnv = await initializeTestEnvironment({
-    projectId: "mylist-rules-test",
+    projectId: "demo-mylist-rules",
     firestore: {
       rules: fs.readFileSync(
         path.join(__dirname, "firestore.rules"),
