@@ -815,53 +815,176 @@ public class MainActivity extends AppCompatActivity
                                    @NonNull String password,
                                    @NonNull AccountBottomSheet.ActionCallback callback) {
         FirebaseUser sourceUser = authRepository.getCurrentUser();
-        String sourceUserId = sourceUser != null && sourceUser.isAnonymous()
-                ? sourceUser.getUid()
-                : "";
+        TaskRepository sourceRepository = taskRepository;
+
+        if (sourceUser == null
+                || !sourceUser.isAnonymous()
+                || sourceRepository == null) {
+            callback.onError(new IllegalStateException(getString(R.string.auth_error)));
+            return;
+        }
+
+        String sourceUserId = sourceUser.getUid();
         List<TaskModel> guestTasks = new ArrayList<>(tasks);
 
         stopListeningForTasks();
+
+        // Verify and open the destination account in a secondary Firebase session.
+        // The default auth session deliberately stays on the guest account until
+        // its Firestore data has been copied and cleaned up.
+        authRepository.openExistingAccountSession(
+                this,
+                email,
+                password,
+                new AuthRepository.ExistingAccountSessionCallback() {
+                    @Override
+                    public void onSuccess(
+                            @NonNull AuthRepository.ExistingAccountSession targetSession) {
+                        TaskRepository targetRepository;
+                        try {
+                            targetRepository = targetSession.taskRepository();
+                        } catch (Exception exception) {
+                            targetSession.close();
+                            resumeGuestSession(sourceUserId);
+                            callback.onError(exception);
+                            return;
+                        }
+
+                        targetRepository.mergeTasks(
+                                sourceUserId,
+                                guestTasks,
+                                new TaskRepository.OperationCallback() {
+                                    @Override
+                                    public void onSuccess() {
+                                        sourceRepository.deleteAllTasks(
+                                                new TaskRepository.OperationCallback() {
+                                                    @Override
+                                                    public void onSuccess() {
+                                                        switchToRestoredAccount(
+                                                                email,
+                                                                password,
+                                                                sourceUserId,
+                                                                sourceRepository,
+                                                                guestTasks,
+                                                                targetSession,
+                                                                callback
+                                                        );
+                                                    }
+
+                                                    @Override
+                                                    public void onError(
+                                                            @NonNull Exception exception) {
+                                                        recoverGuestSnapshot(
+                                                                sourceUserId,
+                                                                sourceRepository,
+                                                                guestTasks,
+                                                                targetSession,
+                                                                exception,
+                                                                callback
+                                                        );
+                                                    }
+                                                }
+                                        );
+                                    }
+
+                                    @Override
+                                    public void onError(@NonNull Exception exception) {
+                                        // The source account is still untouched, so a
+                                        // failed target merge can be retried safely.
+                                        targetSession.close();
+                                        resumeGuestSession(sourceUserId);
+                                        callback.onError(exception);
+                                    }
+                                }
+                        );
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception exception) {
+                        resumeGuestSession(sourceUserId);
+                        callback.onError(exception);
+                    }
+                }
+        );
+    }
+
+    private void switchToRestoredAccount(
+            @NonNull String email,
+            @NonNull String password,
+            @NonNull String sourceUserId,
+            @NonNull TaskRepository sourceRepository,
+            @NonNull List<TaskModel> guestTasks,
+            @NonNull AuthRepository.ExistingAccountSession targetSession,
+            @NonNull AccountBottomSheet.ActionCallback callback) {
         authRepository.restoreEmailAccount(email, password, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(@NonNull FirebaseUser user) {
-                if (guestTasks.isEmpty() || sourceUserId.isEmpty()) {
-                    resetForIdentityChange(user);
-                    callback.onSuccess();
-                    return;
-                }
-
-                TaskRepository targetRepository = new TaskRepository(user.getUid());
-                targetRepository.mergeTasks(
-                        sourceUserId,
-                        guestTasks,
-                        new TaskRepository.OperationCallback() {
-                            @Override
-                            public void onSuccess() {
-                                resetForIdentityChange(user);
-                                callback.onSuccess();
-                            }
-
-                            @Override
-                            public void onError(@NonNull Exception exception) {
-                                // The account sign-in succeeded, so keep the app
-                                // usable on that identity even if a merge write fails.
-                                resetForIdentityChange(user);
-                                callback.onError(exception);
-                            }
-                        }
-                );
+                targetSession.close();
+                resetForIdentityChange(user);
+                callback.onSuccess();
             }
 
             @Override
             public void onError(@NonNull Exception exception) {
-                if (sourceUser != null) {
-                    startListeningForTasks(sourceUser);
-                } else {
-                    ensureSignedIn();
-                }
-                callback.onError(exception);
+                // The destination already has the imported tasks. Restore the
+                // guest snapshot as well so a transient final sign-in failure
+                // never leaves the current user looking at an empty account.
+                recoverGuestSnapshot(
+                        sourceUserId,
+                        sourceRepository,
+                        guestTasks,
+                        targetSession,
+                        exception,
+                        callback
+                );
             }
         });
+    }
+
+    private void recoverGuestSnapshot(
+            @NonNull String sourceUserId,
+            @NonNull TaskRepository sourceRepository,
+            @NonNull List<TaskModel> guestTasks,
+            @NonNull AuthRepository.ExistingAccountSession targetSession,
+            @NonNull Exception originalException,
+            @NonNull AccountBottomSheet.ActionCallback callback) {
+        targetSession.close();
+
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+        if (currentUser == null || !sourceUserId.equals(currentUser.getUid())) {
+            ensureSignedIn();
+            callback.onError(originalException);
+            return;
+        }
+
+        sourceRepository.restoreTasks(
+                guestTasks,
+                new TaskRepository.OperationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        resumeGuestSession(sourceUserId);
+                        callback.onError(originalException);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception restoreException) {
+                        // The imported target copy is already safe and stable.
+                        // Surface the original migration failure, then reconnect
+                        // whatever identity Firebase currently has.
+                        resumeGuestSession(sourceUserId);
+                        callback.onError(originalException);
+                    }
+                }
+        );
+    }
+
+    private void resumeGuestSession(@NonNull String sourceUserId) {
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+        if (currentUser != null && sourceUserId.equals(currentUser.getUid())) {
+            startListeningForTasks(currentUser);
+        } else {
+            ensureSignedIn();
+        }
     }
 
     @Override
