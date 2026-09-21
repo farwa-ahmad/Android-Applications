@@ -16,6 +16,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -29,8 +30,8 @@ import com.farwaahmad.mylist.data.TaskRepository;
 import com.farwaahmad.mylist.databinding.ActivityMainBinding;
 import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
+import com.farwaahmad.mylist.viewmodel.MainViewModel;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.text.SimpleDateFormat;
@@ -54,13 +55,9 @@ public class MainActivity extends AppCompatActivity
     private String selectedScheduleDate;
     private boolean scheduleMode;
 
+    private MainViewModel viewModel;
     private AuthRepository authRepository;
-    private TaskRepository taskRepository;
-    private ListenerRegistration listenerRegistration;
     private LaunchManager launchManager;
-    private boolean activityStarted;
-    private boolean signInInProgress;
-    private boolean initialStateReady;
     private static final int SWIPE_HINT_MAX_RETRIES = 20;
     private static final long SWIPE_HINT_RETRY_DELAY_MS = 150L;
 
@@ -109,7 +106,8 @@ public class MainActivity extends AppCompatActivity
             return windowInsets;
         });
 
-        authRepository = new AuthRepository();
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        authRepository = viewModel.getAuthRepository();
         launchManager = new LaunchManager(this);
 
         AnimationDrawable animationDrawable =
@@ -161,27 +159,53 @@ public class MainActivity extends AppCompatActivity
         binding.btnRetry.setOnClickListener(v -> retryLoading());
 
         updateCurrentDate();
-        consumeStartupState();
+        observeViewModel();
+        viewModel.initialize(StartupTaskStore.consume());
     }
 
-    private void consumeStartupState() {
-        StartupTaskStore.State startupState = StartupTaskStore.consume();
-        if (startupState == null) {
+    private void observeViewModel() {
+        viewModel.getUiState().observe(this, this::renderUiState);
+        viewModel.getErrorEvents().observe(this, event -> {
+            if (event == null) {
+                return;
+            }
+
+            MainViewModel.ErrorType error = event.getContentIfNotHandled();
+            if (error == null) {
+                return;
+            }
+
+            int message = error == MainViewModel.ErrorType.AUTH
+                    ? R.string.auth_error
+                    : R.string.load_tasks_error;
+            int duration = error == MainViewModel.ErrorType.AUTH
+                    ? Toast.LENGTH_LONG
+                    : Toast.LENGTH_SHORT;
+            Toast.makeText(this, message, duration).show();
+        });
+    }
+
+    private void renderUiState(@NonNull MainViewModel.UiState state) {
+        tasks.clear();
+        tasks.addAll(state.getTasks());
+        taskAdapter.submitTasks(tasks);
+
+        binding.fabAddTask.setEnabled(state.areControlsEnabled());
+        binding.btnAccount.setEnabled(state.areControlsEnabled());
+
+        if (state.isLoading()) {
+            binding.btnRetry.setVisibility(View.GONE);
             showLoading(true);
             return;
         }
 
-        initialStateReady = true;
-
-        if (startupState.isLoadFailed()) {
+        if (state.hasConnectionError()) {
             showConnectionError();
             return;
         }
 
-        tasks.clear();
-        tasks.addAll(startupState.getTasks());
-        taskAdapter.submitTasks(tasks);
         showContentState();
+        showPendingSwipeHint();
     }
 
     @Override
@@ -201,107 +225,18 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-        activityStarted = true;
-        ensureSignedIn();
+        viewModel.start();
     }
 
     @Override
     protected void onStop() {
-        activityStarted = false;
         cancelSwipeHintRetry();
-        stopListeningForTasks();
+        viewModel.stop();
         super.onStop();
     }
 
-    private void ensureSignedIn() {
-        FirebaseUser currentUser = authRepository.getCurrentUser();
-        if (currentUser != null) {
-            startListeningForTasks(currentUser);
-            return;
-        }
-
-        if (signInInProgress) {
-            return;
-        }
-
-        if (!initialStateReady) {
-            showLoading(true);
-        }
-
-        signInInProgress = true;
-        authRepository.ensureUser(new AuthRepository.AuthCallback() {
-            @Override
-            public void onSuccess(@NonNull FirebaseUser user) {
-                signInInProgress = false;
-                if (activityStarted) {
-                    startListeningForTasks(user);
-                }
-            }
-
-            @Override
-            public void onError(@NonNull Exception exception) {
-                signInInProgress = false;
-                if (!activityStarted) {
-                    return;
-                }
-
-                binding.fabAddTask.setEnabled(false);
-                binding.btnAccount.setEnabled(false);
-                initialStateReady = true;
-                showConnectionError();
-                Toast.makeText(MainActivity.this, R.string.auth_error, Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
-    private void startListeningForTasks(@NonNull FirebaseUser user) {
-        stopListeningForTasks();
-
-        if (!initialStateReady) {
-            showLoading(true);
-        }
-
-        taskRepository = new TaskRepository(user.getUid());
-        binding.fabAddTask.setEnabled(true);
-        binding.btnAccount.setEnabled(true);
-
-        listenerRegistration = taskRepository.listenForTasks(new TaskRepository.TaskListener() {
-            @Override
-            public void onTasksChanged(@NonNull List<TaskModel> updatedTasks) {
-                tasks.clear();
-                tasks.addAll(updatedTasks);
-                taskAdapter.submitTasks(tasks);
-                initialStateReady = true;
-                showContentState();
-                showPendingSwipeHint();
-            }
-
-            @Override
-            public void onError(@NonNull Exception exception) {
-                initialStateReady = true;
-                if (tasks.isEmpty()) {
-                    showConnectionError();
-                } else {
-                    showContentState();
-                }
-                Toast.makeText(
-                        MainActivity.this,
-                        R.string.load_tasks_error,
-                        Toast.LENGTH_SHORT
-                ).show();
-            }
-        });
-    }
-
     private void retryLoading() {
-        initialStateReady = false;
-        showLoading(true);
-        FirebaseUser user = authRepository.getCurrentUser();
-        if (user != null) {
-            startListeningForTasks(user);
-        } else {
-            ensureSignedIn();
-        }
+        viewModel.retry();
     }
 
     private void showLoading(boolean loading) {
@@ -495,10 +430,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void stopListeningForTasks() {
-        if (listenerRegistration != null) {
-            listenerRegistration.remove();
-            listenerRegistration = null;
-        }
+        viewModel.pauseTaskListening();
     }
 
     private void openAccountSheet() {
@@ -548,12 +480,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void resetForIdentityChange(@NonNull FirebaseUser user) {
-        stopListeningForTasks();
-        tasks.clear();
-        taskAdapter.submitTasks(tasks);
-        refreshScheduleView();
-        initialStateReady = false;
-        startListeningForTasks(user);
+        viewModel.resetForIdentityChange(user);
     }
 
     @Override
@@ -562,12 +489,13 @@ public class MainActivity extends AppCompatActivity
                                         @NonNull String dueDate,
                                         @NonNull String dueTime,
                                         @NonNull TaskAdapter.EditSaveCallback callback) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
             return;
         }
 
-        taskRepository.updateTask(
+        repository.updateTask(
                 task.getId(),
                 taskText,
                 dueDate,
@@ -598,12 +526,11 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onDeleteTask(@NonNull TaskModel task) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             taskAdapter.submitTasks(tasks);
             return;
         }
-
-        TaskRepository repository = taskRepository;
 
         repository.deleteTask(task.getId(), new TaskRepository.OperationCallback() {
             @Override
@@ -688,11 +615,12 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             return;
         }
 
-        taskRepository.updateStatus(task.getId(), isComplete, new TaskRepository.OperationCallback() {
+        repository.updateStatus(task.getId(), isComplete, new TaskRepository.OperationCallback() {
             @Override
             public void onSuccess() {
             }
@@ -715,13 +643,14 @@ public class MainActivity extends AppCompatActivity
                                     @NonNull String dueDate,
                                     @NonNull String dueTime,
                                     @NonNull AddNewTask.SaveCallback callback) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
             return;
         }
 
         boolean shouldTeachSwipe = launchManager.shouldShowSwipeHint();
-        taskRepository.addTask(taskText, dueDate, dueTime, new TaskRepository.AddTaskCallback() {
+        repository.addTask(taskText, dueDate, dueTime, new TaskRepository.AddTaskCallback() {
             @Override
             public void onSuccess(@NonNull String taskId) {
                 if (shouldTeachSwipe) {
@@ -815,7 +744,7 @@ public class MainActivity extends AppCompatActivity
                                    @NonNull String password,
                                    @NonNull AccountBottomSheet.ActionCallback callback) {
         FirebaseUser sourceUser = authRepository.getCurrentUser();
-        TaskRepository sourceRepository = taskRepository;
+        TaskRepository sourceRepository = viewModel.getTaskRepository();
 
         if (sourceUser == null
                 || !sourceUser.isAnonymous()
@@ -952,7 +881,7 @@ public class MainActivity extends AppCompatActivity
 
         FirebaseUser currentUser = authRepository.getCurrentUser();
         if (currentUser == null || !sourceUserId.equals(currentUser.getUid())) {
-            ensureSignedIn();
+            viewModel.resumeUserSession(sourceUserId);
             callback.onError(originalException);
             return;
         }
@@ -979,28 +908,18 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void resumeGuestSession(@NonNull String sourceUserId) {
-        FirebaseUser currentUser = authRepository.getCurrentUser();
-        if (currentUser != null && sourceUserId.equals(currentUser.getUid())) {
-            startListeningForTasks(currentUser);
-        } else {
-            ensureSignedIn();
-        }
+        viewModel.resumeUserSession(sourceUserId);
     }
 
     @Override
     public void onSignOutRequested() {
-        stopListeningForTasks();
-        tasks.clear();
-        taskAdapter.submitTasks(tasks);
-        initialStateReady = false;
-        authRepository.signOut();
-        ensureSignedIn();
+        viewModel.signOut();
     }
 
     @Override
     public void onDeleteRequested(@Nullable String password,
                                   @NonNull AccountBottomSheet.ActionCallback callback) {
-        TaskRepository repository = taskRepository;
+        TaskRepository repository = viewModel.getTaskRepository();
         FirebaseUser user = authRepository.getCurrentUser();
 
         if (repository == null || user == null) {
@@ -1032,12 +951,8 @@ public class MainActivity extends AppCompatActivity
                                         new AuthRepository.SimpleCallback() {
                                             @Override
                                             public void onSuccess() {
-                                                tasks.clear();
-                                                taskAdapter.submitTasks(tasks);
-                                                taskRepository = null;
-                                                initialStateReady = false;
+                                                viewModel.completeAccountDeletion();
                                                 callback.onSuccess();
-                                                ensureSignedIn();
                                             }
 
                                             @Override
@@ -1108,7 +1023,7 @@ public class MainActivity extends AppCompatActivity
                 new TaskRepository.OperationCallback() {
                     @Override
                     public void onSuccess() {
-                        startListeningForTasks(currentUser);
+                        viewModel.resumeUserSession(userId);
                         callback.onError(originalException);
                     }
 
@@ -1116,7 +1031,7 @@ public class MainActivity extends AppCompatActivity
                     public void onError(@NonNull Exception restoreException) {
                         // Reconnect to the surviving account even if compensating
                         // writes fail, then surface the original deletion failure.
-                        startListeningForTasks(currentUser);
+                        viewModel.resumeUserSession(userId);
                         callback.onError(originalException);
                     }
                 }
