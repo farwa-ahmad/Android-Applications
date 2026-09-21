@@ -233,7 +233,10 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         taskHolder.taskCheckBox.setOnCheckedChangeListener(null);
         taskHolder.taskCheckBox.setChecked(completed);
-        taskHolder.taskCheckBox.setEnabled(!editing && !editSaveInProgress);
+        // Only the row being edited is locked. A save in progress must not
+        // disable unrelated task checkboxes, otherwise RecyclerView can leave
+        // completed tasks rendered in Android's disabled gray state.
+        taskHolder.taskCheckBox.setEnabled(!editing);
         taskHolder.taskCheckBox.setOnCheckedChangeListener((buttonView, isChecked) ->
                 actionListener.onTaskStatusChanged(task, isChecked)
         );
