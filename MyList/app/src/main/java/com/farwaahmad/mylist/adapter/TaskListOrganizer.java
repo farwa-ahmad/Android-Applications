@@ -77,12 +77,17 @@ public final class TaskListOrganizer {
             }
         }
 
-        Comparator<TaskModel> byDueDate =
-                Comparator.comparingLong(task ->
-                        TaskDateUtils.sortTimestamp(task.getDue(), task.getDueTime()));
-        overdue.sort(byDueDate);
-        today.sort(byDueDate);
-        upcoming.sort(byDueDate);
+        Comparator<TaskModel> byDueDate = (left, right) -> {
+            long leftTime = TaskDateUtils.sortTimestamp(left.getDue(), left.getDueTime());
+            long rightTime = TaskDateUtils.sortTimestamp(right.getDue(), right.getDueTime());
+            if (leftTime == rightTime) {
+                return 0;
+            }
+            return leftTime < rightTime ? -1 : 1;
+        };
+        Collections.sort(overdue, byDueDate);
+        Collections.sort(today, byDueDate);
+        Collections.sort(upcoming, byDueDate);
 
         List<Section> sections = new ArrayList<>();
         addIfNotEmpty(sections, SectionType.OVERDUE, overdue);

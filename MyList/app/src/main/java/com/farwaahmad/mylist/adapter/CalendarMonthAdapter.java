@@ -74,7 +74,8 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                     due.get(Calendar.MONTH),
                     due.get(Calendar.DAY_OF_MONTH)
             );
-            taskCounts.put(key, taskCounts.getOrDefault(key, 0) + 1);
+            Integer currentCount = taskCounts.get(key);
+            taskCounts.put(key, currentCount == null ? 1 : currentCount + 1);
         }
 
         int leading = (first.get(Calendar.DAY_OF_WEEK) - first.getFirstDayOfWeek() + 7) % 7;
@@ -96,10 +97,11 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
                     && first.get(Calendar.MONTH) == today.get(Calendar.MONTH)
                     && day == today.get(Calendar.DAY_OF_MONTH);
 
+            Integer count = taskCounts.get(date);
             cells.add(Cell.day(
                     day,
                     date,
-                    taskCounts.getOrDefault(date, 0),
+                    count == null ? 0 : count,
                     isToday,
                     TaskDateUtils.isPastDate(date)
             ));

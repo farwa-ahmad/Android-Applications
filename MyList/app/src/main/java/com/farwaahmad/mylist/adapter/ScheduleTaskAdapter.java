@@ -15,7 +15,7 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 
 public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapter.TaskViewHolder> {
@@ -38,11 +38,18 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
             }
         }
 
-        tasks.sort(
-                Comparator.comparingInt(TaskModel::getStatus)
-                        .thenComparingLong(task ->
-                                TaskDateUtils.sortTimestamp(task.getDue(), task.getDueTime()))
-        );
+        Collections.sort(tasks, (left, right) -> {
+            if (left.getStatus() != right.getStatus()) {
+                return left.getStatus() < right.getStatus() ? -1 : 1;
+            }
+
+            long leftTime = TaskDateUtils.sortTimestamp(left.getDue(), left.getDueTime());
+            long rightTime = TaskDateUtils.sortTimestamp(right.getDue(), right.getDueTime());
+            if (leftTime == rightTime) {
+                return 0;
+            }
+            return leftTime < rightTime ? -1 : 1;
+        });
 
         notifyDataSetChanged();
     }
