@@ -17,8 +17,10 @@ public final class TaskDateUtils {
 
     public static final int BUCKET_OVERDUE = 0;
     public static final int BUCKET_TODAY = 1;
-    public static final int BUCKET_UPCOMING = 2;
-    public static final int BUCKET_NONE = 3;
+    public static final int BUCKET_TOMORROW = 2;
+    public static final int BUCKET_THIS_WEEK = 3;
+    public static final int BUCKET_LATER = 4;
+    public static final int BUCKET_NONE = 5;
 
     private static final String STORAGE_PATTERN = "yyyy-MM-dd";
     private static final String LEGACY_PATTERN = "d/M/yyyy";
@@ -124,29 +126,43 @@ public final class TaskDateUtils {
             return BUCKET_OVERDUE;
         }
 
-        if (!sameDay(due, today)) {
-            return BUCKET_UPCOMING;
+        if (sameDay(due, today)) {
+            Calendar time = calendarForDueTime(dueTime);
+            if (time == null) {
+                return BUCKET_TODAY;
+            }
+
+            Calendar dueMoment = Calendar.getInstance();
+            dueMoment.set(
+                    due.get(Calendar.YEAR),
+                    due.get(Calendar.MONTH),
+                    due.get(Calendar.DAY_OF_MONTH),
+                    time.get(Calendar.HOUR_OF_DAY),
+                    time.get(Calendar.MINUTE),
+                    0
+            );
+            dueMoment.set(Calendar.MILLISECOND, 0);
+
+            return dueMoment.before(Calendar.getInstance())
+                    ? BUCKET_OVERDUE
+                    : BUCKET_TODAY;
         }
 
-        Calendar time = calendarForDueTime(dueTime);
-        if (time == null) {
-            return BUCKET_TODAY;
+        Calendar tomorrow = (Calendar) today.clone();
+        tomorrow.add(Calendar.DAY_OF_MONTH, 1);
+        if (sameDay(due, tomorrow)) {
+            return BUCKET_TOMORROW;
         }
 
-        Calendar dueMoment = Calendar.getInstance();
-        dueMoment.set(
-                due.get(Calendar.YEAR),
-                due.get(Calendar.MONTH),
-                due.get(Calendar.DAY_OF_MONTH),
-                time.get(Calendar.HOUR_OF_DAY),
-                time.get(Calendar.MINUTE),
-                0
-        );
-        dueMoment.set(Calendar.MILLISECOND, 0);
+        // "This week" is a rolling seven-day window after today. Today and
+        // tomorrow have their own sections, so this bucket covers days 2-7.
+        Calendar weekLimit = (Calendar) today.clone();
+        weekLimit.add(Calendar.DAY_OF_MONTH, 7);
+        if (!due.after(weekLimit)) {
+            return BUCKET_THIS_WEEK;
+        }
 
-        return dueMoment.before(Calendar.getInstance())
-                ? BUCKET_OVERDUE
-                : BUCKET_TODAY;
+        return BUCKET_LATER;
     }
 
     public static long sortTimestamp(@Nullable String dueDate) {

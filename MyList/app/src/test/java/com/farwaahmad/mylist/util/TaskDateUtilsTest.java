@@ -69,10 +69,26 @@ public class TaskDateUtilsTest {
     }
 
     @Test
-    public void bucketFor_tomorrow_isUpcoming() {
+    public void bucketFor_tomorrow_isTomorrow() {
         assertEquals(
-                TaskDateUtils.BUCKET_UPCOMING,
+                TaskDateUtils.BUCKET_TOMORROW,
                 TaskDateUtils.bucketFor(relativeStorageDate(1))
+        );
+    }
+
+    @Test
+    public void bucketFor_daySeven_isThisWeek() {
+        assertEquals(
+                TaskDateUtils.BUCKET_THIS_WEEK,
+                TaskDateUtils.bucketFor(relativeStorageDate(7))
+        );
+    }
+
+    @Test
+    public void bucketFor_dayEight_isLater() {
+        assertEquals(
+                TaskDateUtils.BUCKET_LATER,
+                TaskDateUtils.bucketFor(relativeStorageDate(8))
         );
     }
 

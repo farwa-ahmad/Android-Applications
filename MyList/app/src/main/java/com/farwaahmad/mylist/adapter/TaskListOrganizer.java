@@ -16,7 +16,9 @@ public final class TaskListOrganizer {
     public enum SectionType {
         OVERDUE,
         TODAY,
-        UPCOMING,
+        TOMORROW,
+        THIS_WEEK,
+        LATER,
         NO_DUE_DATE,
         COMPLETED
     }
@@ -52,7 +54,9 @@ public final class TaskListOrganizer {
     public static List<Section> organize(@NonNull List<TaskModel> source) {
         List<TaskModel> overdue = new ArrayList<>();
         List<TaskModel> today = new ArrayList<>();
-        List<TaskModel> upcoming = new ArrayList<>();
+        List<TaskModel> tomorrow = new ArrayList<>();
+        List<TaskModel> thisWeek = new ArrayList<>();
+        List<TaskModel> later = new ArrayList<>();
         List<TaskModel> noDueDate = new ArrayList<>();
         List<TaskModel> completed = new ArrayList<>();
 
@@ -69,8 +73,14 @@ public final class TaskListOrganizer {
                 case TaskDateUtils.BUCKET_TODAY:
                     today.add(task);
                     break;
-                case TaskDateUtils.BUCKET_UPCOMING:
-                    upcoming.add(task);
+                case TaskDateUtils.BUCKET_TOMORROW:
+                    tomorrow.add(task);
+                    break;
+                case TaskDateUtils.BUCKET_THIS_WEEK:
+                    thisWeek.add(task);
+                    break;
+                case TaskDateUtils.BUCKET_LATER:
+                    later.add(task);
                     break;
                 default:
                     noDueDate.add(task);
@@ -87,12 +97,16 @@ public final class TaskListOrganizer {
         };
         Collections.sort(overdue, byDueDate);
         Collections.sort(today, byDueDate);
-        Collections.sort(upcoming, byDueDate);
+        Collections.sort(tomorrow, byDueDate);
+        Collections.sort(thisWeek, byDueDate);
+        Collections.sort(later, byDueDate);
 
         List<Section> sections = new ArrayList<>();
         addIfNotEmpty(sections, SectionType.OVERDUE, overdue);
         addIfNotEmpty(sections, SectionType.TODAY, today);
-        addIfNotEmpty(sections, SectionType.UPCOMING, upcoming);
+        addIfNotEmpty(sections, SectionType.TOMORROW, tomorrow);
+        addIfNotEmpty(sections, SectionType.THIS_WEEK, thisWeek);
+        addIfNotEmpty(sections, SectionType.LATER, later);
         addIfNotEmpty(sections, SectionType.NO_DUE_DATE, noDueDate);
         addIfNotEmpty(sections, SectionType.COMPLETED, completed);
         return Collections.unmodifiableList(sections);

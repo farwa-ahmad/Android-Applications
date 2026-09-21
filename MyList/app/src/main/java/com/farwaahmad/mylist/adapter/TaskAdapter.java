@@ -96,8 +96,12 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 return R.string.section_overdue;
             case TODAY:
                 return R.string.section_today;
-            case UPCOMING:
-                return R.string.section_upcoming;
+            case TOMORROW:
+                return R.string.section_tomorrow;
+            case THIS_WEEK:
+                return R.string.section_this_week;
+            case LATER:
+                return R.string.section_later;
             case NO_DUE_DATE:
                 return R.string.section_no_due_date;
             case COMPLETED:
