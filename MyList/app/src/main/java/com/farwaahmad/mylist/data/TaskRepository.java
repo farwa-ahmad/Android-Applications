@@ -32,7 +32,12 @@ public class TaskRepository {
     private final String userId;
 
     public TaskRepository(@NonNull String userId) {
-        this.firestore = FirebaseFirestore.getInstance();
+        this(FirebaseFirestore.getInstance(), userId);
+    }
+
+    TaskRepository(@NonNull FirebaseFirestore firestore,
+                   @NonNull String userId) {
+        this.firestore = firestore;
         this.userId = userId;
     }
 
@@ -175,6 +180,61 @@ public class TaskRepository {
         tasks().document(id)
                 .set(restored)
                 .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void restoreTasks(@NonNull List<TaskModel> sourceTasks,
+                             @NonNull OperationCallback callback) {
+        restoreTaskBatch(sourceTasks, 0, callback);
+    }
+
+    private void restoreTaskBatch(@NonNull List<TaskModel> sourceTasks,
+                                  int start,
+                                  @NonNull OperationCallback callback) {
+        if (start >= sourceTasks.size()) {
+            callback.onSuccess();
+            return;
+        }
+
+        int end = Math.min(start + MERGE_BATCH_SIZE, sourceTasks.size());
+        WriteBatch batch = firestore.batch();
+
+        for (int index = start; index < end; index++) {
+            TaskModel sourceTask = sourceTasks.get(index);
+            String sourceTaskId = sourceTask.getId();
+            String taskText = sourceTask.getTask();
+
+            if (sourceTaskId == null || sourceTaskId.trim().isEmpty()
+                    || taskText == null || taskText.trim().isEmpty()) {
+                callback.onError(new IllegalArgumentException(
+                        "A guest task is missing its identity."
+                ));
+                return;
+            }
+
+            Map<String, Object> restored = new HashMap<>();
+            restored.put("task", taskText);
+            restored.put("due", sourceTask.getDue() == null ? "" : sourceTask.getDue());
+
+            String dueTime = sourceTask.getDueTime();
+            if (dueTime != null && !dueTime.isEmpty()) {
+                restored.put("dueTime", dueTime);
+            }
+
+            restored.put("status", sourceTask.getStatus());
+            restored.put(
+                    "time",
+                    sourceTask.getTime() != null
+                            ? sourceTask.getTime()
+                            : Timestamp.now()
+            );
+
+            batch.set(tasks().document(sourceTaskId), restored);
+        }
+
+        batch.commit()
+                .addOnSuccessListener(unused ->
+                        restoreTaskBatch(sourceTasks, end, callback))
                 .addOnFailureListener(callback::onError);
     }
 

@@ -1,12 +1,19 @@
 package com.farwaahmad.mylist.data;
 
+import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.UUID;
 
 public class AuthRepository {
 
@@ -69,9 +76,61 @@ public class AuthRepository {
                                     @NonNull String password,
                                     @NonNull AuthCallback callback) {
         // Sign-in itself switches FirebaseAuth to the existing account.
-        // Do not delete the anonymous user first: invalid credentials should
-        // leave the guest session and its task data recoverable.
         signInWithEmail(email, password, callback);
+    }
+
+    /**
+     * Authenticates an existing account without replacing the current guest session.
+     *
+     * This temporary secondary Firebase app lets guest tasks be copied into the
+     * destination account while the default FirebaseAuth instance still owns the
+     * guest Firestore documents and can safely clean them up afterwards.
+     */
+    public void openExistingAccountSession(@NonNull Context context,
+                                           @NonNull String email,
+                                           @NonNull String password,
+                                           @NonNull ExistingAccountSessionCallback callback) {
+        FirebaseApp secondaryApp;
+        try {
+            FirebaseOptions options = FirebaseApp.getInstance().getOptions();
+            secondaryApp = FirebaseApp.initializeApp(
+                    context.getApplicationContext(),
+                    options,
+                    "restore-" + UUID.randomUUID()
+            );
+        } catch (Exception exception) {
+            callback.onError(exception);
+            return;
+        }
+
+        if (secondaryApp == null) {
+            callback.onError(new IllegalStateException(
+                    "Could not create a temporary Firebase session."
+            ));
+            return;
+        }
+
+        FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
+        secondaryAuth.useAppLanguage();
+        secondaryAuth.signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener(result -> {
+                    FirebaseUser user = result.getUser();
+                    if (user == null) {
+                        secondaryApp.delete();
+                        callback.onError(new IllegalStateException(
+                                "Firebase returned no user."
+                        ));
+                        return;
+                    }
+
+                    callback.onSuccess(
+                            new ExistingAccountSession(secondaryApp, user.getUid())
+                    );
+                })
+                .addOnFailureListener(exception -> {
+                    secondaryApp.delete();
+                    callback.onError(exception);
+                });
     }
 
     private void signInWithEmail(@NonNull String email,
@@ -177,8 +236,47 @@ public class AuthRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public static final class ExistingAccountSession implements AutoCloseable {
+
+        private final FirebaseApp app;
+        private final String userId;
+        private boolean closed;
+
+        private ExistingAccountSession(@NonNull FirebaseApp app,
+                                       @NonNull String userId) {
+            this.app = app;
+            this.userId = userId;
+        }
+
+        @NonNull
+        public TaskRepository taskRepository() {
+            if (closed) {
+                throw new IllegalStateException("Temporary account session is closed.");
+            }
+
+            return new TaskRepository(
+                    FirebaseFirestore.getInstance(app),
+                    userId
+            );
+        }
+
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            app.delete();
+        }
+    }
+
     public interface AuthCallback {
         void onSuccess(@NonNull FirebaseUser user);
+        void onError(@NonNull Exception exception);
+    }
+
+    public interface ExistingAccountSessionCallback {
+        void onSuccess(@NonNull ExistingAccountSession session);
         void onError(@NonNull Exception exception);
     }
 
