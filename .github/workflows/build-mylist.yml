@@ -8,6 +8,10 @@ on:
     paths:
       - "MyList/**"
       - ".github/workflows/build-mylist.yml"
+  pull_request:
+    paths:
+      - "MyList/**"
+      - ".github/workflows/build-mylist.yml"
   workflow_dispatch:
 
 jobs:
@@ -27,6 +31,17 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Firestore rules test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Test Firestore security rules
+        run: npx firebase emulators:exec --only firestore --project demo-mylist-rules "npm run test:rules"
 
       - name: Install Android SDK platform
         run: |
