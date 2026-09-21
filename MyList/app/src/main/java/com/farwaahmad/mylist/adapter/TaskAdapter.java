@@ -326,19 +326,22 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         InputMethodManager.SHOW_IMPLICIT
                 );
 
-                holder.taskTitle.postDelayed(() -> {
+                holder.itemView.postDelayed(() -> {
                     if (!taskId.equals(editingTaskId)
                             || holder.getBindingAdapterPosition() == RecyclerView.NO_POSITION) {
                         return;
                     }
 
-                    Rect textBounds = new Rect(
+                    // Reveal the whole expanded editor, not just the EditText.
+                    // Otherwise Android stops scrolling once the text is visible
+                    // and leaves the Cancel / Save actions behind the keyboard.
+                    Rect editorBounds = new Rect(
                             0,
                             0,
-                            holder.taskTitle.getWidth(),
-                            holder.taskTitle.getHeight()
+                            holder.itemView.getWidth(),
+                            holder.itemView.getHeight()
                     );
-                    holder.taskTitle.requestRectangleOnScreen(textBounds, false);
+                    holder.itemView.requestRectangleOnScreen(editorBounds, false);
                 }, 250L);
             });
         }
