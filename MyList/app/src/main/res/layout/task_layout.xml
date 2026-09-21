@@ -266,7 +266,7 @@
                 android:contentDescription="@string/dismiss_swipe_hint"
                 android:padding="10dp"
                 android:src="@drawable/ic_close_24"
-                android:tint="@color/secondary" />
+                app:tint="@color/secondary" />
 
         </LinearLayout>
 
