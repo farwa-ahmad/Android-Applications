@@ -1,8 +1,5 @@
 package com.farwaahmad.mylist.adapter;
 
-import com.farwaahmad.mylist.TaskDatePicker;
-import com.farwaahmad.mylist.TaskTimePicker;
-import androidx.fragment.app.FragmentActivity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.graphics.Paint;
@@ -34,19 +31,12 @@ import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int TYPE_HEADER = 0;
     private static final int TYPE_TASK = 1;
-
-    private static final int SECTION_OVERDUE = 0;
-    private static final int SECTION_TODAY = 1;
-    private static final int SECTION_UPCOMING = 2;
-    private static final int SECTION_NO_DUE_DATE = 3;
-    private static final int SECTION_COMPLETED = 4;
 
     private static final long SWIPE_HINT_DURATION_MS = 6500L;
 
@@ -58,13 +48,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Runnable hideSwipeHintRunnable = this::hideSwipeHint;
 
     private String swipeHintTaskId;
-    private String editingTaskId;
-    private String pendingFocusTaskId;
-    private String draftTaskText = "";
-    private String draftDueDate = "";
-    private String draftDueTime = "";
-    private boolean editDatePickerOpen;
-    private boolean editSaveInProgress;
+    private final TaskEditState editState = new TaskEditState();
     private boolean completedCollapsed = true;
 
     public TaskAdapter(@NonNull Context context,
@@ -96,62 +80,35 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private void rebuildRows() {
         rows.clear();
 
-        List<TaskModel> overdue = new ArrayList<>();
-        List<TaskModel> today = new ArrayList<>();
-        List<TaskModel> upcoming = new ArrayList<>();
-        List<TaskModel> noDueDate = new ArrayList<>();
-        List<TaskModel> completed = new ArrayList<>();
-
-        for (TaskModel task : latestTasks) {
-            if (task.getStatus() != 0) {
-                completed.add(task);
-                continue;
-            }
-
-            switch (TaskDateUtils.bucketFor(task.getDue(), task.getDueTime())) {
-                case TaskDateUtils.BUCKET_OVERDUE:
-                    overdue.add(task);
-                    break;
-                case TaskDateUtils.BUCKET_TODAY:
-                    today.add(task);
-                    break;
-                case TaskDateUtils.BUCKET_UPCOMING:
-                    upcoming.add(task);
-                    break;
-                default:
-                    noDueDate.add(task);
-            }
+        for (TaskListOrganizer.Section section : TaskListOrganizer.organize(latestTasks)) {
+            boolean collapsed = section.getType() == TaskListOrganizer.SectionType.COMPLETED
+                    && completedCollapsed;
+            addSection(section.getType(), sectionTitleRes(section.getType()), section.getTasks(), collapsed);
         }
-
-        Comparator<TaskModel> byDueDate =
-                Comparator.comparingLong(task ->
-                        TaskDateUtils.sortTimestamp(task.getDue(), task.getDueTime()));
-        overdue.sort(byDueDate);
-        today.sort(byDueDate);
-        upcoming.sort(byDueDate);
-
-        addSection(SECTION_OVERDUE, R.string.section_overdue, overdue, false);
-        addSection(SECTION_TODAY, R.string.section_today, today, false);
-        addSection(SECTION_UPCOMING, R.string.section_upcoming, upcoming, false);
-        addSection(SECTION_NO_DUE_DATE, R.string.section_no_due_date, noDueDate, false);
-        addSection(
-                SECTION_COMPLETED,
-                R.string.section_completed,
-                completed,
-                completedCollapsed
-        );
 
         notifyDataSetChanged();
     }
 
-    private void addSection(int section,
+    private int sectionTitleRes(@NonNull TaskListOrganizer.SectionType section) {
+        switch (section) {
+            case OVERDUE:
+                return R.string.section_overdue;
+            case TODAY:
+                return R.string.section_today;
+            case UPCOMING:
+                return R.string.section_upcoming;
+            case NO_DUE_DATE:
+                return R.string.section_no_due_date;
+            case COMPLETED:
+            default:
+                return R.string.section_completed;
+        }
+    }
+
+    private void addSection(@NonNull TaskListOrganizer.SectionType section,
                             int titleRes,
                             @NonNull List<TaskModel> tasks,
                             boolean collapsed) {
-        if (tasks.isEmpty()) {
-            return;
-        }
-
         rows.add(Row.header(context.getString(titleRes), section, tasks.size()));
 
         if (collapsed) {
@@ -204,7 +161,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         bindGroupShape(taskHolder, row);
 
         boolean completed = task.getStatus() != 0;
-        boolean editing = task.getId() != null && task.getId().equals(editingTaskId);
+        boolean editing = editState.isEditing(task.getId());
 
         taskHolder.itemView.animate().cancel();
         taskHolder.itemView.setTranslationX(0f);
@@ -701,7 +658,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private void bindDueDate(@NonNull TaskViewHolder holder,
                              @NonNull TaskModel task,
-                             int section,
+                             @NonNull TaskListOrganizer.SectionType section,
                              boolean completed) {
         String displayDue = TaskDateUtils.formatDueForRow(
                 context,
@@ -719,7 +676,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.dueDateText.setTextColor(
                 ContextCompat.getColor(
                         context,
-                        !completed && section == SECTION_OVERDUE
+                        !completed && section == TaskListOrganizer.SectionType.OVERDUE
                                 ? R.color.delete_color
                                 : R.color.dark_gray
                 )
@@ -730,7 +687,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         holder.title.setText(row.header);
         holder.count.setText(String.valueOf(row.count));
 
-        boolean isOverdue = row.section == SECTION_OVERDUE;
+        boolean isOverdue = row.section == TaskListOrganizer.SectionType.OVERDUE;
         int headerColor = ContextCompat.getColor(
                 context,
                 isOverdue ? R.color.delete_color : R.color.secondary
@@ -743,7 +700,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 )
         );
 
-        boolean isCompleted = row.section == SECTION_COMPLETED;
+        boolean isCompleted = row.section == TaskListOrganizer.SectionType.COMPLETED;
         holder.toggle.setVisibility(isCompleted ? View.VISIBLE : View.GONE);
         holder.itemView.setClickable(isCompleted);
         holder.itemView.setFocusable(isCompleted);
@@ -945,14 +902,15 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final String header;
         @Nullable
         final TaskModel task;
-        final int section;
+        @NonNull
+        final TaskListOrganizer.SectionType section;
         final int count;
         final boolean firstInSection;
         final boolean lastInSection;
 
         private Row(@Nullable String header,
                     @Nullable TaskModel task,
-                    int section,
+                    @NonNull TaskListOrganizer.SectionType section,
                     int count,
                     boolean firstInSection,
                     boolean lastInSection) {
@@ -964,12 +922,14 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             this.lastInSection = lastInSection;
         }
 
-        static Row header(@NonNull String header, int section, int count) {
+        static Row header(@NonNull String header,
+                          @NonNull TaskListOrganizer.SectionType section,
+                          int count) {
             return new Row(header, null, section, count, false, false);
         }
 
         static Row task(@NonNull TaskModel task,
-                        int section,
+                        @NonNull TaskListOrganizer.SectionType section,
                         boolean firstInSection,
                         boolean lastInSection) {
             return new Row(
