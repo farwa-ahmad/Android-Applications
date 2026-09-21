@@ -1000,38 +1000,80 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onDeleteRequested(@Nullable String password,
                                   @NonNull AccountBottomSheet.ActionCallback callback) {
-        if (taskRepository == null) {
+        TaskRepository repository = taskRepository;
+        FirebaseUser user = authRepository.getCurrentUser();
+
+        if (repository == null || user == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
             return;
         }
 
+        String userId = user.getUid();
+
         authRepository.reauthenticateForDeletion(password, new AuthRepository.SimpleCallback() {
             @Override
             public void onSuccess() {
-                taskRepository.deleteAllTasks(new TaskRepository.OperationCallback() {
+                // Always take a fresh server snapshot before deleting anything.
+                // The in-memory list may be stale or may have come from cache.
+                repository.loadServerTasksOnce(new TaskRepository.TaskListener() {
                     @Override
-                    public void onSuccess() {
-                        authRepository.deleteCurrentAccount(new AuthRepository.SimpleCallback() {
+                    public void onTasksChanged(@NonNull List<TaskModel> serverTasks) {
+                        List<TaskModel> deletionSnapshot = new ArrayList<>(serverTasks);
+
+                        // Freeze live updates during the destructive part so the UI
+                        // does not temporarily render an empty account before the
+                        // full account deletion has actually succeeded.
+                        stopListeningForTasks();
+
+                        repository.deleteAllTasks(new TaskRepository.OperationCallback() {
                             @Override
                             public void onSuccess() {
-                                stopListeningForTasks();
-                                tasks.clear();
-                                taskAdapter.submitTasks(tasks);
-                                taskRepository = null;
-                                initialStateReady = false;
-                                callback.onSuccess();
-                                ensureSignedIn();
+                                authRepository.deleteCurrentAccount(
+                                        new AuthRepository.SimpleCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                tasks.clear();
+                                                taskAdapter.submitTasks(tasks);
+                                                taskRepository = null;
+                                                initialStateReady = false;
+                                                callback.onSuccess();
+                                                ensureSignedIn();
+                                            }
+
+                                            @Override
+                                            public void onError(
+                                                    @NonNull Exception exception) {
+                                                rollbackAccountDeletion(
+                                                        userId,
+                                                        repository,
+                                                        deletionSnapshot,
+                                                        exception,
+                                                        callback
+                                                );
+                                            }
+                                        }
+                                );
                             }
 
                             @Override
                             public void onError(@NonNull Exception exception) {
-                                callback.onError(exception);
+                                // deleteAllTasks works in batches, so a failure can
+                                // happen after an earlier batch already succeeded.
+                                // Restore the complete server snapshot in that case.
+                                rollbackAccountDeletion(
+                                        userId,
+                                        repository,
+                                        deletionSnapshot,
+                                        exception,
+                                        callback
+                                );
                             }
                         });
                     }
 
                     @Override
                     public void onError(@NonNull Exception exception) {
+                        // Nothing has been deleted yet, so simply abort.
                         callback.onError(exception);
                     }
                 });
@@ -1042,5 +1084,42 @@ public class MainActivity extends AppCompatActivity
                 callback.onError(exception);
             }
         });
+    }
+
+    private void rollbackAccountDeletion(
+            @NonNull String userId,
+            @NonNull TaskRepository repository,
+            @NonNull List<TaskModel> deletionSnapshot,
+            @NonNull Exception originalException,
+            @NonNull AccountBottomSheet.ActionCallback callback) {
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+
+        if (currentUser == null || !userId.equals(currentUser.getUid())) {
+            // If Firebase no longer exposes the original identity, we cannot
+            // safely write back into that user's owner-protected Firestore path.
+            // Do not create a different anonymous identity and pretend rollback
+            // succeeded.
+            callback.onError(originalException);
+            return;
+        }
+
+        repository.restoreTasks(
+                deletionSnapshot,
+                new TaskRepository.OperationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        startListeningForTasks(currentUser);
+                        callback.onError(originalException);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception restoreException) {
+                        // Reconnect to the surviving account even if compensating
+                        // writes fail, then surface the original deletion failure.
+                        startListeningForTasks(currentUser);
+                        callback.onError(originalException);
+                    }
+                }
+        );
     }
 }
