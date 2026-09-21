@@ -489,12 +489,13 @@ public class MainActivity extends AppCompatActivity
                                         @NonNull String dueDate,
                                         @NonNull String dueTime,
                                         @NonNull TaskAdapter.EditSaveCallback callback) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
             return;
         }
 
-        taskRepository.updateTask(
+        repository.updateTask(
                 task.getId(),
                 taskText,
                 dueDate,
@@ -525,12 +526,11 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onDeleteTask(@NonNull TaskModel task) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             taskAdapter.submitTasks(tasks);
             return;
         }
-
-        TaskRepository repository = taskRepository;
 
         repository.deleteTask(task.getId(), new TaskRepository.OperationCallback() {
             @Override
@@ -615,11 +615,12 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             return;
         }
 
-        taskRepository.updateStatus(task.getId(), isComplete, new TaskRepository.OperationCallback() {
+        repository.updateStatus(task.getId(), isComplete, new TaskRepository.OperationCallback() {
             @Override
             public void onSuccess() {
             }
@@ -642,13 +643,14 @@ public class MainActivity extends AppCompatActivity
                                     @NonNull String dueDate,
                                     @NonNull String dueTime,
                                     @NonNull AddNewTask.SaveCallback callback) {
-        if (taskRepository == null) {
+        TaskRepository repository = viewModel.getTaskRepository();
+        if (repository == null) {
             callback.onError(new IllegalStateException(getString(R.string.auth_error)));
             return;
         }
 
         boolean shouldTeachSwipe = launchManager.shouldShowSwipeHint();
-        taskRepository.addTask(taskText, dueDate, dueTime, new TaskRepository.AddTaskCallback() {
+        repository.addTask(taskText, dueDate, dueTime, new TaskRepository.AddTaskCallback() {
             @Override
             public void onSuccess(@NonNull String taskId) {
                 if (shouldTeachSwipe) {
@@ -742,7 +744,7 @@ public class MainActivity extends AppCompatActivity
                                    @NonNull String password,
                                    @NonNull AccountBottomSheet.ActionCallback callback) {
         FirebaseUser sourceUser = authRepository.getCurrentUser();
-        TaskRepository sourceRepository = taskRepository;
+        TaskRepository sourceRepository = viewModel.getTaskRepository();
 
         if (sourceUser == null
                 || !sourceUser.isAnonymous()
@@ -879,7 +881,7 @@ public class MainActivity extends AppCompatActivity
 
         FirebaseUser currentUser = authRepository.getCurrentUser();
         if (currentUser == null || !sourceUserId.equals(currentUser.getUid())) {
-            ensureSignedIn();
+            viewModel.resumeUserSession(sourceUserId);
             callback.onError(originalException);
             return;
         }
@@ -906,28 +908,18 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void resumeGuestSession(@NonNull String sourceUserId) {
-        FirebaseUser currentUser = authRepository.getCurrentUser();
-        if (currentUser != null && sourceUserId.equals(currentUser.getUid())) {
-            startListeningForTasks(currentUser);
-        } else {
-            ensureSignedIn();
-        }
+        viewModel.resumeUserSession(sourceUserId);
     }
 
     @Override
     public void onSignOutRequested() {
-        stopListeningForTasks();
-        tasks.clear();
-        taskAdapter.submitTasks(tasks);
-        initialStateReady = false;
-        authRepository.signOut();
-        ensureSignedIn();
+        viewModel.signOut();
     }
 
     @Override
     public void onDeleteRequested(@Nullable String password,
                                   @NonNull AccountBottomSheet.ActionCallback callback) {
-        TaskRepository repository = taskRepository;
+        TaskRepository repository = viewModel.getTaskRepository();
         FirebaseUser user = authRepository.getCurrentUser();
 
         if (repository == null || user == null) {
@@ -959,12 +951,8 @@ public class MainActivity extends AppCompatActivity
                                         new AuthRepository.SimpleCallback() {
                                             @Override
                                             public void onSuccess() {
-                                                tasks.clear();
-                                                taskAdapter.submitTasks(tasks);
-                                                taskRepository = null;
-                                                initialStateReady = false;
+                                                viewModel.completeAccountDeletion();
                                                 callback.onSuccess();
-                                                ensureSignedIn();
                                             }
 
                                             @Override
@@ -1035,7 +1023,7 @@ public class MainActivity extends AppCompatActivity
                 new TaskRepository.OperationCallback() {
                     @Override
                     public void onSuccess() {
-                        startListeningForTasks(currentUser);
+                        viewModel.resumeUserSession(userId);
                         callback.onError(originalException);
                     }
 
@@ -1043,7 +1031,7 @@ public class MainActivity extends AppCompatActivity
                     public void onError(@NonNull Exception restoreException) {
                         // Reconnect to the surviving account even if compensating
                         // writes fail, then surface the original deletion failure.
-                        startListeningForTasks(currentUser);
+                        viewModel.resumeUserSession(userId);
                         callback.onError(originalException);
                     }
                 }
