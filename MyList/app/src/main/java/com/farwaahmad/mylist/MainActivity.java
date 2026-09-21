@@ -60,6 +60,8 @@ public class MainActivity extends AppCompatActivity
     private LaunchManager launchManager;
     private static final int SWIPE_HINT_MAX_RETRIES = 20;
     private static final long SWIPE_HINT_RETRY_DELAY_MS = 150L;
+    private static final String EDIT_TASK_DATE_REQUEST = "editTaskDate";
+    private static final String EDIT_TASK_TIME_REQUEST = "editTaskTime";
 
     private boolean pendingSwipeHintAfterSheetCloses;
     private boolean swipeHintRetryScheduled;
@@ -120,6 +122,7 @@ public class MainActivity extends AppCompatActivity
 
         taskAdapter = new TaskAdapter(this, this);
         binding.rvTasks.setAdapter(taskAdapter);
+        registerEditPickerResults();
 
         visibleMonth.set(Calendar.DAY_OF_MONTH, 1);
         Calendar today = Calendar.getInstance();
@@ -161,6 +164,25 @@ public class MainActivity extends AppCompatActivity
         updateCurrentDate();
         observeViewModel();
         viewModel.initialize(StartupTaskStore.consume());
+    }
+
+    private void registerEditPickerResults() {
+        getSupportFragmentManager().setFragmentResultListener(
+                EDIT_TASK_DATE_REQUEST,
+                this,
+                (key, result) -> taskAdapter.onDatePickerResult(
+                        result.getBoolean(TaskDatePicker.RESULT_CONFIRMED, false),
+                        result.getString(TaskDatePicker.RESULT)
+                )
+        );
+
+        getSupportFragmentManager().setFragmentResultListener(
+                EDIT_TASK_TIME_REQUEST,
+                this,
+                (key, result) -> taskAdapter.onTimePickerResult(
+                        result.getString(TaskTimePicker.RESULT)
+                )
+        );
     }
 
     private void observeViewModel() {
@@ -611,6 +633,25 @@ public class MainActivity extends AppCompatActivity
 
     private int dpToPx(int dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    public boolean onTaskDatePickerRequested(@NonNull String initialDate) {
+        return TaskDatePicker.show(
+                getSupportFragmentManager(),
+                EDIT_TASK_DATE_REQUEST,
+                initialDate
+        );
+    }
+
+    @Override
+    public void onTaskTimePickerRequested(@NonNull String initialTime) {
+        TaskTimePicker.show(
+                this,
+                getSupportFragmentManager(),
+                EDIT_TASK_TIME_REQUEST,
+                initialTime
+        );
     }
 
     @Override
