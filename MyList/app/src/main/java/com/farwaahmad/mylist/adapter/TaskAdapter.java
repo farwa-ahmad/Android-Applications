@@ -22,6 +22,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.farwaahmad.mylist.R;
@@ -165,6 +166,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         bindGroupShape(taskHolder, row);
+        ViewCompat.setTooltipText(taskHolder.itemView, context.getString(R.string.task_options));
 
         boolean completed = task.getStatus() != 0;
         boolean editing = editState.isEditing(task.getId());
