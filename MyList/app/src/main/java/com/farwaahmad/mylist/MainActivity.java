@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -136,7 +135,13 @@ public class MainActivity extends AppCompatActivity
         binding.rvCalendar.setLayoutManager(new GridLayoutManager(this, 7));
         binding.rvCalendar.setAdapter(calendarMonthAdapter);
 
-        scheduleTaskAdapter = new ScheduleTaskAdapter(this::onTaskStatusChanged);
+        scheduleTaskAdapter = new ScheduleTaskAdapter(
+                this::onTaskStatusChanged,
+                task -> {
+                    setScheduleMode(false);
+                    binding.rvTasks.post(() -> taskAdapter.requestEdit(task));
+                }
+        );
         binding.rvScheduleTasks.setLayoutManager(new LinearLayoutManager(this));
         binding.rvScheduleTasks.setAdapter(scheduleTaskAdapter);
 
@@ -458,7 +463,7 @@ public class MainActivity extends AppCompatActivity
     private void openAccountSheet() {
         FirebaseUser user = authRepository.getCurrentUser();
         if (user == null) {
-            Toast.makeText(this, R.string.auth_error, Toast.LENGTH_SHORT).show();
+            showStatusMessage(R.string.auth_error);
             return;
         }
 
@@ -482,11 +487,7 @@ public class MainActivity extends AppCompatActivity
                 if (currentUser != null) {
                     showAccountSheet(currentUser);
                 } else {
-                    Toast.makeText(
-                            MainActivity.this,
-                            R.string.auth_error,
-                            Toast.LENGTH_SHORT
-                    ).show();
+                    showStatusMessage(R.string.auth_error);
                 }
             }
         });
@@ -526,21 +527,13 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onSuccess() {
                         callback.onSuccess();
-                        Toast.makeText(
-                                MainActivity.this,
-                                R.string.task_updated,
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        showStatusMessage(R.string.task_updated);
                     }
 
                     @Override
                     public void onError(@NonNull Exception exception) {
                         callback.onError(exception);
-                        Toast.makeText(
-                                MainActivity.this,
-                                R.string.save_task_error,
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        showStatusMessage(R.string.save_task_error);
                     }
                 }
         );
@@ -561,11 +554,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onError(@NonNull Exception exception) {
-                Toast.makeText(
-                        MainActivity.this,
-                        R.string.delete_task_error,
-                        Toast.LENGTH_SHORT
-                ).show();
+                showStatusMessage(R.string.delete_task_error);
             }
         });
 
@@ -583,15 +572,17 @@ public class MainActivity extends AppCompatActivity
 
                     @Override
                     public void onError(@NonNull Exception exception) {
-                        Toast.makeText(
-                                MainActivity.this,
-                                R.string.restore_task_error,
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        showStatusMessage(R.string.restore_task_error);
                     }
                 })
         );
 
+        styleStatusSnackbar(snackbar);
+        snackbar.show();
+    }
+
+    private void showStatusMessage(int messageRes) {
+        Snackbar snackbar = Snackbar.make(binding.getRoot(), messageRes, Snackbar.LENGTH_LONG);
         styleStatusSnackbar(snackbar);
         snackbar.show();
     }
@@ -670,11 +661,7 @@ public class MainActivity extends AppCompatActivity
             public void onError(@NonNull Exception exception) {
                 taskAdapter.submitTasks(tasks);
                 refreshScheduleView();
-                Toast.makeText(
-                        MainActivity.this,
-                        R.string.update_task_error,
-                        Toast.LENGTH_SHORT
-                ).show();
+                showStatusMessage(R.string.update_task_error);
             }
         });
     }
