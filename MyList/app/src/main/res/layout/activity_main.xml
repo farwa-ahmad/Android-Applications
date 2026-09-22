@@ -141,7 +141,7 @@
         android:layout_below="@id/topBar"
         android:orientation="vertical"
         android:paddingStart="16dp"
-        android:paddingTop="2dp"
+        android:paddingTop="18dp"
         android:paddingEnd="16dp"
         android:paddingBottom="92dp"
         android:visibility="gone">
