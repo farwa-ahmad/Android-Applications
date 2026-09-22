@@ -2,20 +2,25 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/dayRoot"
     android:layout_width="match_parent"
-    android:layout_height="48dp"
+    android:layout_height="wrap_content"
+    android:minHeight="48dp"
     android:layout_margin="2dp"
     android:foreground="?attr/selectableItemBackgroundBorderless">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
         android:gravity="center"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/tvDayNumber"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="34dp"
+            android:minHeight="34dp"
+            android:padding="6dp"
             android:gravity="center"
             android:textColor="@color/secondary"
             android:textSize="14sp" />
