@@ -648,20 +648,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         );
     }
 
-    private int dpToPx(int dp) {
-        return Math.round(dp * context.getResources().getDisplayMetrics().density);
-    }
-
     private void bindHeader(@NonNull HeaderViewHolder holder, @NonNull Row row) {
         holder.title.setText(row.header);
         holder.count.setText(String.valueOf(row.count));
-
-        // Keep the first section aligned with the top of Schedule view; later
-        // sections retain extra breathing room between groups.
-        int horizontalStart = dpToPx(20);
-        int horizontalEnd = dpToPx(16);
-        int top = holder.getBindingAdapterPosition() == 0 ? dpToPx(4) : dpToPx(18);
-        holder.itemView.setPaddingRelative(horizontalStart, top, horizontalEnd, dpToPx(8));
 
         boolean isOverdue = row.section == TaskListOrganizer.SectionType.OVERDUE;
         int headerColor = ContextCompat.getColor(
