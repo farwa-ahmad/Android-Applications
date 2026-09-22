@@ -205,10 +205,7 @@ public class MainActivity extends AppCompatActivity
             int message = error == MainViewModel.ErrorType.AUTH
                     ? R.string.auth_error
                     : R.string.load_tasks_error;
-            int duration = error == MainViewModel.ErrorType.AUTH
-                    ? Toast.LENGTH_LONG
-                    : Toast.LENGTH_SHORT;
-            Toast.makeText(this, message, duration).show();
+            showStatusMessage(message);
         });
     }
 
