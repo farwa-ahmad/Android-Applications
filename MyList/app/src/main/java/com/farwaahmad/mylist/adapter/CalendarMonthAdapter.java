@@ -17,7 +17,7 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 
 import java.text.DateFormatSymbols;
-import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -230,14 +230,16 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
 
         Calendar date = TaskDateUtils.calendarForDue(cell.storageDate);
         if (date != null) {
-            String description = new SimpleDateFormat(
-                    "EEEE, d MMMM",
+            String description = DateFormat.getDateInstance(
+                    DateFormat.FULL,
                     Locale.getDefault()
             ).format(date.getTime());
-            if (cell.taskCount == 1) {
-                description += ", 1 task";
-            } else if (cell.taskCount > 1) {
-                description += ", " + cell.taskCount + " tasks";
+            if (cell.taskCount > 0) {
+                description += ", " + holder.itemView.getResources().getQuantityString(
+                        R.plurals.scheduled_task_count,
+                        cell.taskCount,
+                        cell.taskCount
+                );
             }
             dayHolder.itemView.setContentDescription(description);
         }
