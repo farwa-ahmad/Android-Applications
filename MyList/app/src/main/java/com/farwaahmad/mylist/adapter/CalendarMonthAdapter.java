@@ -177,17 +177,9 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         if (todaySelected) {
             dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
         } else if (selected) {
-            dayHolder.dayNumber.setBackgroundResource(
-                    showTaskCounts
-                            ? R.drawable.bg_calendar_day_selected_schedule
-                            : R.drawable.bg_calendar_day_selected
-            );
+            dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_selected);
         } else if (cell.today) {
-            dayHolder.dayNumber.setBackgroundResource(
-                    showTaskCounts
-                            ? R.drawable.bg_calendar_day_today_schedule
-                            : R.drawable.bg_calendar_day_today
-            );
+            dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today);
         } else {
             dayHolder.dayNumber.setBackgroundResource(android.R.color.transparent);
         }
