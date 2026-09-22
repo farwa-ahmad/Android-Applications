@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rlSlider"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -12,6 +13,7 @@
         android:layout_above="@+id/tvMyList"
         android:layout_centerHorizontal="true"
         android:text="@string/onboarding_thanks"
+        android:textColor="@color/secondary"
         android:textSize="18sp" />
 
     <TextView
@@ -45,19 +47,24 @@
         android:paddingHorizontal="40dp"
         android:paddingTop="50dp"
         android:text="@string/onboarding_details"
+        android:textColor="@color/secondary"
         android:textSize="18sp" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnNext"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_margin="5dp"
-        android:background="@android:color/transparent"
+        android:layout_margin="20dp"
+        android:minHeight="48dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
         android:text="@string/next"
         android:textAllCaps="false"
         android:textColor="@color/secondary"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        app:backgroundTint="@color/secondary"
+        app:cornerRadius="24dp" />
 
 </RelativeLayout>
