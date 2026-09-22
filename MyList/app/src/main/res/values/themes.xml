@@ -25,6 +25,10 @@
         <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyList.AppDialog</item>
     </style>
 
+    <style name="ThemeOverlay.MyList.TimePicker" parent="ThemeOverlay.MaterialComponents.TimePicker">
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearanceOverlay.MyList.AppDialog</item>
+    </style>
+
     <style name="Theme.MyList.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_safe</item>
