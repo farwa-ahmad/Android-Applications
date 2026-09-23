@@ -22,9 +22,12 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
 
     private final List<TaskModel> tasks = new ArrayList<>();
     private final OnTaskStatusChangedListener listener;
+    private final OnTaskClickedListener clickListener;
 
-    public ScheduleTaskAdapter(@NonNull OnTaskStatusChangedListener listener) {
+    public ScheduleTaskAdapter(@NonNull OnTaskStatusChangedListener listener,
+                               @NonNull OnTaskClickedListener clickListener) {
         this.listener = listener;
+        this.clickListener = clickListener;
     }
 
     public void submitTasks(@NonNull List<TaskModel> allTasks, @NonNull String selectedDate) {
@@ -100,11 +103,19 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
 
         holder.checkBox.setOnCheckedChangeListener(null);
         holder.checkBox.setChecked(completed);
+        String taskName = task.getTask() == null ? "" : task.getTask();
+        holder.checkBox.setContentDescription(
+                holder.itemView.getContext().getString(
+                        completed ? R.string.mark_task_incomplete : R.string.mark_task_complete,
+                        taskName
+                )
+        );
         holder.checkBox.setOnCheckedChangeListener((button, checked) -> {
             if (checked != (task.getStatus() != 0)) {
                 listener.onTaskStatusChanged(task, checked);
             }
         });
+        holder.itemView.setOnClickListener(v -> clickListener.onTaskClicked(task));
     }
 
     @Override
@@ -141,5 +152,9 @@ public class ScheduleTaskAdapter extends RecyclerView.Adapter<ScheduleTaskAdapte
 
     public interface OnTaskStatusChangedListener {
         void onTaskStatusChanged(@NonNull TaskModel task, boolean isComplete);
+    }
+
+    public interface OnTaskClickedListener {
+        void onTaskClicked(@NonNull TaskModel task);
     }
 }

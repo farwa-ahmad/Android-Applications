@@ -16,11 +16,13 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.farwaahmad.mylist.R;
@@ -164,6 +166,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         bindGroupShape(taskHolder, row);
+        ViewCompat.setTooltipText(taskHolder.itemView, context.getString(R.string.task_options));
 
         boolean completed = task.getStatus() != 0;
         boolean editing = editState.isEditing(task.getId());
@@ -195,6 +198,13 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         taskHolder.taskCheckBox.setOnCheckedChangeListener(null);
         taskHolder.taskCheckBox.setChecked(completed);
+        String taskName = task.getTask() == null ? "" : task.getTask();
+        taskHolder.taskCheckBox.setContentDescription(
+                context.getString(
+                        completed ? R.string.mark_task_incomplete : R.string.mark_task_complete,
+                        taskName
+                )
+        );
         // Only the row being edited is locked. A save in progress must not
         // disable unrelated task checkboxes, otherwise RecyclerView can leave
         // completed tasks rendered in Android's disabled gray state.
@@ -210,6 +220,37 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 startInlineEdit(taskHolder.getBindingAdapterPosition());
             }
         });
+        taskHolder.itemView.setOnLongClickListener(v -> {
+            if (!editing) {
+                showTaskOptions(taskHolder, task);
+            }
+            return true;
+        });
+    }
+
+    private void showTaskOptions(@NonNull TaskViewHolder holder, @NonNull TaskModel task) {
+        PopupMenu menu = new PopupMenu(context, holder.itemView);
+        menu.getMenu().add(context.getString(R.string.edit_task));
+        menu.getMenu().add(context.getString(R.string.delete_task));
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getTitle().toString().equals(context.getString(R.string.edit_task))) {
+                startInlineEdit(holder.getBindingAdapterPosition());
+            } else {
+                actionListener.onDeleteTask(task);
+            }
+            return true;
+        });
+        menu.show();
+    }
+
+    public void requestEdit(@NonNull TaskModel task) {
+        if (task.getId() == null) {
+            return;
+        }
+        int position = getPositionForTaskId(task.getId());
+        if (position != RecyclerView.NO_POSITION) {
+            startInlineEdit(position);
+        }
     }
 
     private void bindTaskTitle(@NonNull TaskViewHolder holder,

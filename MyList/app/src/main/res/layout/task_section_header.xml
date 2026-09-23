@@ -16,7 +16,9 @@
         android:layout_height="wrap_content"
         android:textColor="@color/secondary"
         android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:textAllCaps="true"
+        android:accessibilityHeading="true" />
 
     <TextView
         android:id="@+id/tvSectionCount"

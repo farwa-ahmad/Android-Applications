@@ -39,6 +39,7 @@ public final class TaskTimePicker {
                 : TimeFormat.CLOCK_12H;
 
         MaterialTimePicker picker = new MaterialTimePicker.Builder()
+                .setTheme(R.style.ThemeOverlay_MyList_TimePicker)
                 .setTitleText(R.string.pick_time)
                 .setTimeFormat(timeFormat)
                 .setInputMode(MaterialTimePicker.INPUT_MODE_CLOCK)

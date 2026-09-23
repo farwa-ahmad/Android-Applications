@@ -17,7 +17,7 @@ import com.farwaahmad.mylist.model.TaskModel;
 import com.farwaahmad.mylist.util.TaskDateUtils;
 
 import java.text.DateFormatSymbols;
-import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -177,17 +177,9 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
         if (todaySelected) {
             dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today_selected);
         } else if (selected) {
-            dayHolder.dayNumber.setBackgroundResource(
-                    showTaskCounts
-                            ? R.drawable.bg_calendar_day_selected_schedule
-                            : R.drawable.bg_calendar_day_selected
-            );
+            dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_selected);
         } else if (cell.today) {
-            dayHolder.dayNumber.setBackgroundResource(
-                    showTaskCounts
-                            ? R.drawable.bg_calendar_day_today_schedule
-                            : R.drawable.bg_calendar_day_today
-            );
+            dayHolder.dayNumber.setBackgroundResource(R.drawable.bg_calendar_day_today);
         } else {
             dayHolder.dayNumber.setBackgroundResource(android.R.color.transparent);
         }
@@ -230,14 +222,16 @@ public class CalendarMonthAdapter extends RecyclerView.Adapter<RecyclerView.View
 
         Calendar date = TaskDateUtils.calendarForDue(cell.storageDate);
         if (date != null) {
-            String description = new SimpleDateFormat(
-                    "EEEE, d MMMM",
+            String description = DateFormat.getDateInstance(
+                    DateFormat.FULL,
                     Locale.getDefault()
             ).format(date.getTime());
-            if (cell.taskCount == 1) {
-                description += ", 1 task";
-            } else if (cell.taskCount > 1) {
-                description += ", " + cell.taskCount + " tasks";
+            if (cell.taskCount > 0) {
+                description += ", " + holder.itemView.getResources().getQuantityString(
+                        R.plurals.scheduled_task_count,
+                        cell.taskCount,
+                        cell.taskCount
+                );
             }
             dayHolder.itemView.setContentDescription(description);
         }
